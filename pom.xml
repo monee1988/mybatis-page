@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.hp.core</groupId>
 	<artifactId>mybatis-page</artifactId>
-	<version>0.0.1.RELEASE</version>
+	<version>0.0.1-SNAPSHOTS</version>
 	<name>mybatis-page</name>
 	<description>mybatis-page</description>
 
@@ -95,10 +95,10 @@
 	
 	
 	<scm>
-		<connection>scm:Git:git@github.com:xiepengchong/lint-cleaner-plugin.git</connection>
-		<developerConnection>scm:git:git@github.com:xiepengchong/lint-cleaner-plugin.git</developerConnection>
-		<url>https://github.com/xiepengchong/lint-cleaner-plugin</url>
-		<tag>lint-cleaner-plugin-1.0.1</tag>	
+		<connection>scm:Git:git@github.com:monee1988/mybatis-page.git</connection>
+		<developerConnection>scm:git:git@github.com:monee1988/mybatis-page.git</developerConnection>
+		<url>https://github.com/monee1988/mybatis-page</url>
+		<tag>mybatis-page-0.0.1</tag>	
 	</scm>
 
 	<distributionManagement>
