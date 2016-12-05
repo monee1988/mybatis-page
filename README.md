@@ -1,7 +1,15 @@
 #mybatis-page
 
 mybais-page 是自定义的一个mybatis分页插件，方便系统集成，用户只需要集成到自己的系统中就可以实现自动分页功能。目前只支持mysql和oracle，当然用户也可以自己扩展自己需要的数据库分页。
-
+中央库地址：http://search.maven.org/#artifactdetails%7Ccom.github.monee1988%7Cmybatis-page%7C0.0.1-RELEASE%7Cjar
+maven坐标
+```
+<dependency>
+    <groupId>com.github.monee1988</groupId>
+    <artifactId>mybatis-page</artifactId>
+    <version>0.0.1-RELEASE</version>
+</dependency>
+ ```	
 用法：
 1. 这里是列表文本SqlSessionFactoryBean配置
 ```
@@ -13,9 +21,9 @@ mybais-page 是自定义的一个mybatis分页插件，方便系统集成，用�
         <property name="plugins">
 	           <array>
 	                <!-- 定义加入mybatis-page分页拦截器 -->
-		            <bean class="com.hp.core.mybatis.MybatisInterceptor">
+		            <bean class="com.github.monee1988.mybatis.MybatisInterceptor">
 		                <!-- 当前分页类型选择Mysql -->
-		                <property name="dialectClass" value="com.hp.core.mybatis.dialect.MySqlDialect"/>
+		                <property name="dialectClass" value="com.github.monee1988.mybatis.dialect.MySqlDialect"/>
 		            </bean>
                 </array>
         </property>
@@ -26,7 +34,7 @@ mybais-page 是自定义的一个mybatis分页插件，方便系统集成，用�
 区别第一个版本：该版本需要传入数据源以完成多数据源程XML的加载
 ```
 	<!-- 动态加载sqlSessionFactory 特定的XML -->
-	<bean class="com.hp.core.mybatis.MybatisMapperDynamicLoader">
+	<bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
 		<property name="sqlSessionFactory" ref="sqlSessionFactory"/>
 		<property name="mapperLocations">
 			<array>
@@ -35,7 +43,7 @@ mybais-page 是自定义的一个mybatis分页插件，方便系统集成，用�
 		</property>
 	</bean>
 	<!-- 动态加载sqlSessionFactory2 特定的XML -->
-	<bean class="com.hp.core.mybatis.MybatisMapperDynamicLoader">
+	<bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
 		<property name="sqlSessionFactory" ref="sqlSessionFactory2"/>
 		<property name="mapperLocations">
 			<array>
