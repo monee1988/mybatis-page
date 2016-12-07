@@ -29,9 +29,9 @@ public class Page<T> {
     protected String order = null;
     protected boolean autoCount = true;
 
-    private int startPageIndex; // 显示的页码列表的�?��索引
+    private int startPageIndex; // 显示的页码列表的起始索引
     private int endPageIndex; // 显示的页码列表的结束索引
-    private int pageCount; //总页�?
+    private int pageCount; //总页数据
 
     private Map<String, Object> extend; // page扩展信息
 
@@ -40,31 +40,31 @@ public class Page<T> {
     private long totalCount = 0;
     private String sql;
 
-    //-- 构�?函数 --//
+    //-- 构造函数 --//
     public Page() {
     }
 
     public Page<T> end() {
-        // 1, 总页�?
+        // 1, 总页数
         pageCount = ((int) this.totalCount + pageSize - 1) / pageSize;
         // 2, startPageIndex（显示的页码列表的开始索引）与endPageIndex（显示的页码列表的结束索引）
-        // a, 总页码不大于10�?
+        // a, 总页码不大于10的时候
         if (pageCount <= 10) {
             startPageIndex = 1;
             endPageIndex = pageCount;
         }
-        // b, 总码大于10�?
+        // b, 总码大于10的时候
         else {
-            // 在中间，显示前面4个，后面5�?
+            // 在中间，显示前面4个，后面5
             startPageIndex = pageNo - 4;
             endPageIndex = pageNo + 5;
 
-            // 前面不足4个时，显示前10个页�?
+            // 前面不足4个时，显示前10个页
             if (startPageIndex < 1) {
                 startPageIndex = 1;
                 endPageIndex = 10;
             }
-            // 后面不足5个时，显示后10个页�?
+            // 后面不足5个时，显示后10个页
             else if (endPageIndex > pageCount) {
                 endPageIndex = pageCount;
                 startPageIndex = pageCount - 10 + 1;
@@ -107,14 +107,14 @@ public class Page<T> {
 	}
 
 	/**
-     * 获得当前页的页号,序号�?�?��,默认�?.
+     * 获得当前页的页号
      */
     public int getPageNo() {
         return pageNo;
     }
 
     /**
-     * 设置当前页的页号,序号�?�?��,低于1时自动调整为1.
+     * 设置当前页的页号
      */
     public void setPageNo(final int pageNo) {
         this.pageNo = pageNo;
@@ -125,7 +125,7 @@ public class Page<T> {
     }
 
     /**
-     * 返回Page对象自身的setPageNo函数,可用于连续设置�?
+     * 返回Page对象自身的setPageNo函数,可用于连续设置
      */
     public Page<T> pageNo(final int thePageNo) {
         setPageNo(thePageNo);
@@ -133,21 +133,21 @@ public class Page<T> {
     }
 
     /**
-     * 获得每页的记录数�? 默认�?1.
+     * 获得每页的记录数 .
      */
     public int getPageSize() {
         return pageSize;
     }
 
     /**
-     * 设置每页的记录数�?
+     * 设置每页的记录数
      */
     public void setPageSize(final int pageSize) {
         this.pageSize = pageSize;
     }
 
     /**
-     * 返回Page对象自身的setPageSize函数,可用于连续设置�?
+     * 返回Page对象自身的setPageSize函数,可用于连续设置
      */
     public Page<T> pageSize(final int thePageSize) {
         setPageSize(thePageSize);
@@ -155,14 +155,14 @@ public class Page<T> {
     }
 
     /**
-     * 根据pageNo和pageSize计算当前页第�?��记录在�?结果集中的位�?序号�?�?��.
+     * 根据pageNo和pageSize计算当前页第1条记录在结果集中的位置.
      */
     public int getFirst() {
         return ((pageNo - 1) * pageSize) + 1;
     }
 
     /**
-     * 获得排序字段,无默认�?. 多个排序字段时用','分隔.
+     * 获得排序字段, 多个排序字段时用','分隔.
      */
     public String getOrderBy() {
         return orderBy;
@@ -176,7 +176,7 @@ public class Page<T> {
     }
 
     /**
-     * 返回Page对象自身的setOrderBy函数,可用于连续设置�?
+     * 返回Page对象自身的setOrderBy函数
      */
     public Page<T> orderBy(final String theOrderBy) {
         setOrderBy(theOrderBy);
@@ -184,21 +184,20 @@ public class Page<T> {
     }
 
     /**
-     * 获得排序方向, 无默认�?.
+     * 获得排序方向
      */
     public String getOrder() {
         return order;
     }
 
     /**
-     * 设置排序方式�?
+     * 设置排序方式
      *
-     * @param order 可�?值为desc或asc,多个排序字段时用','分隔.
+     * @param order 值为desc或asc,多个排序字段时用','分隔.
      */
     public void setOrder(final String order) {
         String lowcaseOrder = StringUtils.lowerCase(order);
 
-        //�?��order字符串的合法�?
         String[] orders = StringUtils.split(lowcaseOrder, ',');
         for (String orderStr : orders) {
             if (!StringUtils.equals(DESC, orderStr) && !StringUtils.equals(ASC, orderStr)) {
@@ -209,7 +208,7 @@ public class Page<T> {
     }
 
     /**
-     * 返回Page对象自身的setOrder函数,可用于连续设置�?
+     * 返回Page对象自身的setOrder函数
      */
     public Page<T> order(final String theOrder){
     	setOrder(theOrder);
@@ -217,7 +216,7 @@ public class Page<T> {
     }
 
     /**
-     * 是否已设置排序字�?无默认�?.
+     * 是否已设置排序字
      */
     public boolean isOrderBySetted() {
         return (StringUtils.isNotBlank(orderBy) && StringUtils.isNotBlank(order));
@@ -238,7 +237,7 @@ public class Page<T> {
     }
 
     /**
-     * 返回Page对象自身的setAutoCount函数,可用于连续设置�?
+     * 返回Page对象自身的setAutoCount函数
      */
     public Page<T> autoCount(final boolean theAutoCount) {
         setAutoCount(theAutoCount);
@@ -248,14 +247,14 @@ public class Page<T> {
     //-- 访问查询结果函数 --//
 
     /**
-     * 获得页内的记录列�?
+     * 获得页内的记录列数据
      */
     public List<T> getList() {
         return list;
     }
 
     /**
-     * 设置页内的记录列�?
+     * 设置页内的记录列数据
      */
     public void setList(final List<T> list) {
         this.list = list;
@@ -276,7 +275,7 @@ public class Page<T> {
     }
 
     /**
-     * 根据pageSize与totalCount计算总页�? 默认值为-1.
+     * 根据pageSize与totalCount计算总页数.
      */
     public long getTotalPages() {
         if (totalCount < 0) {
@@ -291,14 +290,14 @@ public class Page<T> {
     }
 
     /**
-     * 是否还有下一�?
+     * 是否还有下一页
      */
     public boolean isHasNext() {
         return (pageNo + 1 <= getTotalPages());
     }
 
     /**
-     * 取得下页的页�? 序号�?�?��.
+     * 取得下页的页码 .
      * 当前页为尾页时仍返回尾页序号.
      */
     public int getNextPage() {
@@ -310,15 +309,15 @@ public class Page<T> {
     }
 
     /**
-     * 是否还有上一�?
+     * 是否还有上一页
      */
     public boolean isHasPre() {
         return (pageNo - 1 >= 1);
     }
 
     /**
-     * 取得上页的页�? 序号�?�?��.
-     * 当前页为首页时返回首页序�?
+     * 取得上页的页码.
+     * 当前页为首页时返回首页
      */
     public int getPrePage() {
         if (isHasPre()) {
@@ -330,7 +329,6 @@ public class Page<T> {
 
 
     /**
-     * 根据pageNo和pageSize计算当前页第�?��记录在�?结果集中的位�?序号�?�?��.
      * 用于Mysql,Hibernate.
      */
     public int getOffset() {
@@ -338,7 +336,6 @@ public class Page<T> {
     }
 
     /**
-     * 根据pageNo和pageSize计算当前页第�?��记录在�?结果集中的位�?序号�?�?��.
      * 用于Oracle.
      */
     public int getStartRow() {
@@ -346,7 +343,6 @@ public class Page<T> {
     }
 
     /**
-     * 根据pageNo和pageSize计算当前页最后一条记录在总结果集中的位置, 序号�?�?��.
      * 用于Oracle.
      */
     public int getEndRow() {

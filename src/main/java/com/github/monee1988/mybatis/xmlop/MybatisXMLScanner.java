@@ -1,6 +1,9 @@
 package com.github.monee1988.mybatis.xmlop;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.session.Configuration;
@@ -23,23 +27,25 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 public class MybatisXMLScanner {
 
 	private ScheduledExecutorService service = null;
-	
+
 	private SqlSessionFactory sqlSession;
-	
-	private String [] mapperLocations;
-	
+
+	private String[] mapperLocations;
+
 	private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
-	
+
 	private final HashMap<String, String> fileMapping = new HashMap<String, String>();
-	
+
 	private final List<String> changeMapers = new ArrayList<String>();
+
+	private List<File> changeXMLFiles = new ArrayList<File>();
 
 	public MybatisXMLScanner() {
 	}
 
 	public MybatisXMLScanner(SqlSessionFactory factory, String[] mapperLocations) {
-		this.sqlSession =factory;
-		this.mapperLocations =mapperLocations;
+		this.sqlSession = factory;
+		this.mapperLocations = mapperLocations;
 	}
 
 	public Resource[] getResource(String mapperLocation) throws IOException {
@@ -47,62 +53,49 @@ public class MybatisXMLScanner {
 		return resourcePatternResolver.getResources(mapperLocation);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void reloadXML() throws Exception {
 		Configuration configuration = sqlSession.getConfiguration();
-		// 移除加载项
-		removeConfig(configuration);
-		// 重新扫描加载
-		for (String mapperLocation : mapperLocations) {
 
-			Resource[] resources = getResource(mapperLocation);
-			if (resources != null) {
-				for (int i = 0; i < resources.length; i++) {
-					if (resources[i] == null) {
-						continue;
-					}
+		// 清理原有资源，更新为自己的StrictMap方便，增量重新加载
+		String[] mapFieldNames = new String[] { "mappedStatements", "caches", "resultMaps", "parameterMaps",
+				"keyGenerators", "sqlFragments" };
+		for (String fieldName : mapFieldNames) {
+			Field field = configuration.getClass().getDeclaredField(fieldName);
+			field.setAccessible(true);
+			Map map = ((Map) field.get(configuration));
+			if (!(map instanceof StrictMap)) {
+				Map newMap = new StrictMap(StringUtils.capitalize(fieldName) + "collection");
+				for (Object key : map.keySet()) {
 					try {
-						XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(resources[i].getInputStream(),
-								configuration, resources[i].toString(), configuration.getSqlFragments());
-						xmlMapperBuilder.parse();
-					} catch (Exception e) {
-						throw new NestedIOException("Failed to parse mapping resource: '" + resources[i] + "'", e);
-					} finally {
-						ErrorContext.instance().reset();
+						newMap.put(key, map.get(key));
+					} catch (IllegalArgumentException ex) {
+						newMap.put(key, ex.getMessage());
 					}
 				}
+				field.set(configuration, newMap);
 			}
-			// }
+		}
+		for (int i = 0; i < changeXMLFiles.size(); i++) {
+			InputStream inputStream = new FileInputStream(changeXMLFiles.get(i));
+			String resource = changeXMLFiles.get(i).getAbsolutePath();
+			
+			// 清理已加载的资源标识，方便让它重新加载。
+			Field loadedResourcesField = configuration.getClass().getDeclaredField("loadedResources");
+			loadedResourcesField.setAccessible(true);
+			Set loadedResourcesSet = ((Set) loadedResourcesField.get(configuration));
+			loadedResourcesSet.remove(resource);
+			try {
+				XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(inputStream, configuration, resource,
+						configuration.getSqlFragments());
+				xmlMapperBuilder.parse();
+			} catch (Exception e) {
+				throw new NestedIOException("Failed to parse mapping resource: '" + changeXMLFiles.get(i).getAbsolutePath() + "'", e);
+			} finally {
+				ErrorContext.instance().reset();
+			}
 		}
 
-	}
-
-	private void removeConfig(Configuration configuration) throws Exception {
-		Class<?> classConfig = configuration.getClass();
-		clearMap(classConfig, configuration, "mappedStatements");
-		clearMap(classConfig, configuration, "caches");
-		clearMap(classConfig, configuration, "resultMaps");
-		clearMap(classConfig, configuration, "parameterMaps");
-		clearMap(classConfig, configuration, "keyGenerators");
-		clearMap(classConfig, configuration, "sqlFragments");
-
-		clearSet(classConfig, configuration, "loadedResources");
-
-	}
-
-	private void clearMap(Class<?> classConfig, Configuration configuration, String fieldName) throws Exception {
-		Field field = classConfig.getDeclaredField(fieldName);
-		field.setAccessible(true);
-		@SuppressWarnings("rawtypes")
-		Map mapConfig = (Map) field.get(configuration);
-		mapConfig.clear();
-	}
-
-	private void clearSet(Class<?> classConfig, Configuration configuration, String fieldName) throws Exception {
-		Field field = classConfig.getDeclaredField(fieldName);
-		field.setAccessible(true);
-		@SuppressWarnings("rawtypes")
-		Set setConfig = (Set) field.get(configuration);
-		setConfig.clear();
 	}
 
 	public void scan() throws IOException {
@@ -138,6 +131,7 @@ public class MybatisXMLScanner {
 					String multi_key = getValue(resources[i]);
 					if (!multi_key.equals(value)) {
 						changeMapers.add(name);
+						changeXMLFiles.add(resources[i].getFile());
 						isChanged = true;
 						fileMapping.put(name, multi_key);
 					}
@@ -149,11 +143,11 @@ public class MybatisXMLScanner {
 
 	private void mointerXmlChange() {
 		service = Executors.newScheduledThreadPool(1);
-		service.scheduleAtFixedRate(new MointerMybatisXMLChangeTask(this,changeMapers), 5, 5, TimeUnit.SECONDS);
+		service.scheduleAtFixedRate(new MointerMybatisXMLChangeTask(this, changeMapers), 5, 5, TimeUnit.SECONDS);
 	}
-	
+
 	public void shutDownTask() {
-		if(service != null ){
+		if (service != null) {
 			service.shutdownNow();
 		}
 	}
@@ -162,7 +156,5 @@ public class MybatisXMLScanner {
 		this.scan();
 		this.mointerXmlChange();
 	}
-	
-	
-	
+
 }
