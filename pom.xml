@@ -4,7 +4,7 @@
 
 	<groupId>com.github.monee1988</groupId>
 	<artifactId>mybatis-page</artifactId>
-	<version>0.0.1-RELEASE</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>mybatis-page</name>
