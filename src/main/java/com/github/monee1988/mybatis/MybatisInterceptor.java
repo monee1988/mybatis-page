@@ -216,7 +216,7 @@ public class MybatisInterceptor  implements Interceptor {
 			return (Page<?>) parameter;
 		}
 		if (parameter instanceof Map<?, ?>) {
-			return (Page<?>) ((Map<?, ?>) parameter).get(PAGE);
+			return ((Map<?, ?>) parameter).containsKey("page")?(Page<?>) ((Map<?, ?>) parameter).get(PAGE):null;
 		}
 
 		return currentGetFiled(parameter, PAGE);

@@ -1,5 +1,6 @@
 package com.github.monee1988.mybatis.entity;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @param <T> Page中记录的类型.
  */
-public class Page<T> {
+public class Page<T> implements Serializable{
     //-- 公共变量 --//
     public static final String ASC = "asc";
     public static final String DESC = "desc";
