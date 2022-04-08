@@ -2,8 +2,7 @@ package com.github.monee1988.mybatis;
 
 import com.github.monee1988.mybatis.dialect.BaseDialect;
 import com.github.monee1988.mybatis.entity.Page;
-import org.apache.ibatis.executor.CachingExecutor;
-import org.apache.ibatis.executor.Executor;
+import org.apache.ibatis.executor.*;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -95,8 +94,20 @@ public class MybatisInterceptor  implements Interceptor {
 			String sql = boundSql.getSql().trim();
 			int offset = page.getOffset();
 			int limit = page.getPageSize();
+			Executor executor = null;
+			Object executorObject = invocation.getTarget();
+			if(executorObject instanceof SimpleExecutor){
+				executor = (SimpleExecutor) invocation.getTarget();
+			}else if(executorObject instanceof ReuseExecutor){
+				executor = (ReuseExecutor) invocation.getTarget();
+			}else if(executorObject instanceof BatchExecutor){
+				executor = (BatchExecutor) invocation.getTarget();
+			}else{
+				executor = (CachingExecutor) invocation.getTarget();
+			}
 
-			CachingExecutor executor = (CachingExecutor) invocation.getTarget();
+			logger.debug("Executor impl by  "+executorObject.getClass().getSimpleName());
+
 			Transaction transaction = executor.getTransaction();
 
 			try {
