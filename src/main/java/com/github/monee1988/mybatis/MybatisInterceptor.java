@@ -94,7 +94,7 @@ public class MybatisInterceptor  implements Interceptor {
 			String sql = boundSql.getSql().trim();
 			int offset = page.getOffset();
 			int limit = page.getPageSize();
-			Executor executor = null;
+			Executor executor;
 			Object executorObject = invocation.getTarget();
 			if(executorObject instanceof SimpleExecutor){
 				executor = (SimpleExecutor) invocation.getTarget();
