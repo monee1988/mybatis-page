@@ -1,15 +1,25 @@
 package com.github.monee1988.mybatis.dialect;
 
-public class OracleDialect extends Dialect {
-	
-	
-	
+/**
+ * ORACLE分页方言
+ * @author monee1988
+ */
+public class OracleDialect extends BaseDialect {
+
+	public OracleDialect() {
+	}
+
+	/**
+	 * 设置支持分页
+	 * @return
+	 */
 	@Override
-	public boolean supportsLimit() {
+	public boolean supportLimit() {
 		return true;
 	}
-	
-	public String getLimitString(String sql, int offset, int limit) {
+
+	@Override
+    public String getLimitString(String sql, int offset, int limit) {
 
 		sql = sql.trim();
 		boolean isForUpdate = false;
@@ -31,5 +41,10 @@ public class OracleDialect extends Dialect {
 		}
 		
 		return pagingSelect.toString();
+	}
+
+	@Override
+	public String getLimitString(String sql, int offset, String offsetPlaceholder, int limit, String limitPlaceholder) {
+		return null;
 	}
 }

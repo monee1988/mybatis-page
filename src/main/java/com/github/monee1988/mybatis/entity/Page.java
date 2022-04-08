@@ -1,47 +1,87 @@
 package com.github.monee1988.mybatis.entity;
 
+import org.apache.commons.lang3.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang3.StringUtils;
-
 /**
  * 与具体ORM实现无关的分页参数及查询结果封装.
- * <p/>
- *
+ * @author monee1988
  * @param <T> Page中记录的类型.
  */
 public class Page<T> implements Serializable{
-    //-- 公共变量 --//
+
+    /**
+     * 正排序
+     */
     public static final String ASC = "asc";
+
+    /**
+     * 倒排序
+     */
     public static final String DESC = "desc";
+
+    /**
+     * 默认分页容量
+     */
     public static final int DEFAULT_PAGESIZE =10;
+
+    /**
+     * 默认的页码
+     */
     public static final int DEFAULT_PAGENO= 1;
 
-    //-- 分页参数 --//
+    /**
+     * 页码
+     */
     protected int pageNo = 1;
+
+
     protected int pageSize = -1;
     protected String orderBy = null;
     protected String order = null;
     protected boolean autoCount = true;
 
-    private int startPageIndex; // 显示的页码列表的起始索引
-    private int endPageIndex; // 显示的页码列表的结束索引
-    private int pageCount; //总页数据
+    /**
+     * 显示的页码列表的起始索引
+     */
+    private int startPageIndex;
 
-    private Map<String, Object> extend; // page扩展信息
+    /**
+     *  显示的页码列表的结束索引
+     */
+    private int endPageIndex;
 
-    //-- 返回结果 --//
+    /**
+     * 总页数据
+     */
+    private int pageCount;
+
+    /**
+     * page扩展信息
+     */
+    private Map<String, Object> extend;
+
+    /**
+     * 返回结果
+     */
     private List<T> list = new ArrayList<T>();
+
+    /**
+     * 总数量
+     */
     private long totalCount = 0;
+
+    /**
+     * sql 语句
+     */
     private String sql;
 
-    //-- 构造函数 --//
     public Page() {
     }
 
@@ -89,8 +129,11 @@ public class Page<T> implements Serializable{
         this.totalCount = totalCount;
     }
 
-    //-- 分页参数访问函数 --//
-
+    /**
+     * 分页参数访问函数
+     * @param request
+     * @param response
+     */
     public Page(HttpServletRequest request, HttpServletResponse response) {
     	request.getParameterMap();
     	String pageNoStr = request.getParameter("pageNo");

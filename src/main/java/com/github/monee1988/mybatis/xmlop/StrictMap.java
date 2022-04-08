@@ -3,9 +3,14 @@ package com.github.monee1988.mybatis.xmlop;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 自定义Map 为了实现监控xml的修改
+ * @author monee1988
+ */
 public class StrictMap<T> extends HashMap<String,T>{
 
     private static final long serialVersionUID = -4950446264854982944L;
+
     private final String name;
 
     public StrictMap(String name, int initialCapacity, float loadFactor) {
@@ -28,7 +33,7 @@ public class StrictMap<T> extends HashMap<String,T>{
       this.name = name;
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
     public T put(String key, T value) {
       if (containsKey(key)) {
     	  remove(key);
@@ -45,6 +50,7 @@ public class StrictMap<T> extends HashMap<String,T>{
       return super.put(key, value);
     }
 
+    @Override
     public T get(Object key) {
       T value = super.get(key);
       if (value == null) {

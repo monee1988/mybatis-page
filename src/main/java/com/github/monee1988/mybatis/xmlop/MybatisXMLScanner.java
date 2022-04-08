@@ -1,19 +1,5 @@
 package com.github.monee1988.mybatis.xmlop;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.executor.ErrorContext;
@@ -23,6 +9,16 @@ import org.springframework.core.NestedIOException;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MybatisXMLScanner {
 
@@ -53,7 +49,10 @@ public class MybatisXMLScanner {
 		return resourcePatternResolver.getResources(mapperLocation);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	/**
+	 *  自动加载被修改的 XML
+	 * @throws Exception
+	 */
 	public void reloadXML() throws Exception {
 		Configuration configuration = sqlSession.getConfiguration();
 

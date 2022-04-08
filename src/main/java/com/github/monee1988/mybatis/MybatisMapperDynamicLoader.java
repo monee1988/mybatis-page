@@ -1,5 +1,6 @@
 package com.github.monee1988.mybatis;
 
+import com.github.monee1988.mybatis.xmlop.MybatisXMLScanner;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,54 +10,77 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import com.github.monee1988.mybatis.xmlop.MybatisXMLScanner;
-
-
 /**
- *	项目开发mybatis XML修改自动加载类
- *	(项目不用重启，方便开发)
+ * 项目开发mybatis XML修改自动加载类
+ * (项目不用重启，方便开发)
+ *
+ * @author monee1988
  */
 public class MybatisMapperDynamicLoader implements DisposableBean, InitializingBean, ApplicationContextAware {
-	
-	private static final Logger logger = LoggerFactory.getLogger(MybatisMapperDynamicLoader.class);  
-	
-	private MybatisXMLScanner scanner = null;
 
-	private String [] mapperLocations;
-	
-	private SqlSessionFactory factory;
-	
-	public final void setMapperLocations(String[] mapperLocations) {
-		this.mapperLocations = mapperLocations;
-	}
+    private static final Logger logger = LoggerFactory.getLogger(MybatisMapperDynamicLoader.class);
 
-	public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
-		this.factory = sqlSessionFactory;
-	}
+    /**
+     * 是否开启动态加载
+     */
+    private Boolean isMapperDynamicLoader = false;
 
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		
-	}
+    /**
+     * mybatis xml 扫描仪
+     */
+    private MybatisXMLScanner scanner = null;
 
-	public void afterPropertiesSet() throws Exception {
-		
-		if(!logger.isDebugEnabled()){
-			return;
-		}
-		try {
-			// 触发文件监听事件
-			scanner = new MybatisXMLScanner(factory,mapperLocations);
-			scanner.scanAndMointerXmlChange();
+    /**
+     * 需要扫描的xml位置
+     */
+    private String[] mapperLocations;
 
-		} catch (Exception e1) {
-			e1.printStackTrace();
-		}
+    /**
+     * 数据源
+     */
+    private SqlSessionFactory factory;
 
-	}
+    public void setMapperLocations(String[] mapperLocations) {
+        this.mapperLocations = mapperLocations;
+    }
 
-	public void destroy() throws Exception {
-		if (scanner != null) {
-			scanner.shutDownTask();
-		}
-	}
+    public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+        this.factory = sqlSessionFactory;
+    }
+
+    public void setMapperDynamicLoader(Boolean mapperDynamicLoader) {
+        isMapperDynamicLoader = mapperDynamicLoader;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    }
+
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+
+        // 如果没有开启动态加载 直接跳出
+        if (!isMapperDynamicLoader) {
+            return;
+        }
+        try {
+            // 触发文件监听事件
+            scanner = new MybatisXMLScanner(factory, mapperLocations);
+            scanner.scanAndMointerXmlChange();
+
+            logger.debug("MybatisMapperDynamicLoader 开始监控。。。");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        if (scanner != null) {
+            scanner.shutDownTask();
+        }
+    }
 }
