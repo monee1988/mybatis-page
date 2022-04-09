@@ -1,41 +1,36 @@
 package com.github.monee1988.mybatis.dialect;
 
+import org.apache.ibatis.session.RowBounds;
+
 /**
  * ORACLE分页方言
  * @author monee1988
  */
-public class OracleDialect extends BaseDialect {
+public class OracleDialect implements Dialect {
 
 	public OracleDialect() {
 	}
 
-	/**
-	 * 设置支持分页
-	 * @return
-	 */
+
 	@Override
-	public boolean supportLimit() {
+	public boolean supportPageable() {
 		return true;
 	}
 
 	@Override
-    public String getLimitString(String sql, int offset, int limit) {
+    public String getDialectPageSql(String originalSql, RowBounds rowBounds) {
 
-		sql = sql.trim();
-		StringBuffer pagingSelect = new StringBuffer(sql.length() + 100);
+		originalSql = originalSql.trim();
+		StringBuffer pagingSelect = new StringBuffer(originalSql.length() + 100);
 		
 		pagingSelect.append("select * from ( select row_.*, rownum rownum_ from ( ");
-		pagingSelect.append(sql);
+		pagingSelect.append(originalSql);
 		pagingSelect.append(" ) row_ ) where rownum_ > ");
-		pagingSelect.append(offset);
+		pagingSelect.append(rowBounds.getOffset());
 		pagingSelect.append(" and rownum_ <= ");
-		pagingSelect.append(offset + limit);
+		pagingSelect.append(rowBounds.getOffset() + rowBounds.getLimit());
 
 		return pagingSelect.toString();
 	}
 
-	@Override
-	public String getLimitString(String sql, int offset, String offsetPlaceholder, int limit, String limitPlaceholder) {
-		return null;
-	}
 }

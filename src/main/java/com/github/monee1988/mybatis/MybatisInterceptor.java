@@ -1,6 +1,6 @@
 package com.github.monee1988.mybatis;
 
-import com.github.monee1988.mybatis.dialect.BaseDialect;
+import com.github.monee1988.mybatis.dialect.Dialect;
 import com.github.monee1988.mybatis.entity.Page;
 import org.apache.ibatis.executor.*;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *  mybatis 拦截器扩展
@@ -46,7 +48,7 @@ public class MybatisInterceptor  implements Interceptor {
 
 	protected static int ROW_BOUNDS_INDEX = 2;
 
-	private BaseDialect dialect;
+	private Dialect dialect;
 
 	private String dialectClassName;
 
@@ -57,7 +59,7 @@ public class MybatisInterceptor  implements Interceptor {
 	public void setDialectClassName(String dialectClassName) {
 		try {
 			this.dialectClassName = dialectClassName;
-			dialect = (BaseDialect) Class.forName(dialectClassName).getDeclaredConstructor().newInstance();
+			dialect = (Dialect) Class.forName(dialectClassName).getDeclaredConstructor().newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException("cannot create dialect instance by dialectClass:" + dialectClassName, e);
 		}
@@ -80,20 +82,18 @@ public class MybatisInterceptor  implements Interceptor {
 		MappedStatement ms = (MappedStatement) queryArgs[MAPPED_STATEMENT_INDEX];
 		Object parameter = queryArgs[PARAMETER_INDEX];
 
-
 		if (parameter == null) {
 			logger.debug("普通的SQL查询");
 			return;
 		}
 		Page<?> page = convertParameter(parameter);
 
-		if (dialect !=null && dialect.supportLimitOffset() && page != null) {
+		if (dialect !=null && dialect.supportPageable() && page != null) {
 			logger.debug("分页查询==>>");
 			
 			BoundSql boundSql = ms.getBoundSql(parameter);
-			String sql = boundSql.getSql().trim();
-			int offset = page.getOffset();
-			int limit = page.getPageSize();
+			String originalSql = boundSql.getSql().trim();
+
 			Object executorObject = invocation.getTarget();
 			Executor executor;
 			if(executorObject instanceof CachingExecutor){
@@ -118,13 +118,14 @@ public class MybatisInterceptor  implements Interceptor {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			sql = dialect.getLimitString(sql, offset, limit);
-			offset = RowBounds.NO_ROW_OFFSET;
-			limit = RowBounds.NO_ROW_LIMIT;
 
-			queryArgs[ROW_BOUNDS_INDEX] = new RowBounds(offset, limit);
+			RowBounds rowBounds =  new RowBounds(page.getOffset(),page.getPageSize());
 
-			BoundSql newBoundSql = copyFromBoundSql(ms, boundSql, sql);
+			String dialectPageSql = dialect.getDialectPageSql(originalSql,rowBounds);
+
+			queryArgs[ROW_BOUNDS_INDEX] = RowBounds.DEFAULT;
+
+			BoundSql newBoundSql = copyFromBoundSql(ms, boundSql, dialectPageSql);
 
 			MappedStatement newMs = copyFromMappedStatement(ms, new BoundSqlSqlSource(newBoundSql));
 
@@ -141,7 +142,7 @@ public class MybatisInterceptor  implements Interceptor {
 			Object parameterObject) {
 		BoundSql boundSql = mappedStatement.getBoundSql(parameterObject);
 		String sql = boundSql.getSql();
-		String countSql = removeBreakingWhitespace(dialect.getCountSql(sql));
+		String countSql = removeBreakingWhitespace(getCountSql(sql));
 		List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
 		BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, parameterMappings,
 				parameterObject);
@@ -185,6 +186,34 @@ public class MybatisInterceptor  implements Interceptor {
 			builder.append(" ");
 		}
 		return builder.toString();
+	}
+
+	private String getCountSql(String sql) {
+		String countHql = " SELECT count(*) "
+				+ removeSelect(removeOrders(sql));
+
+		return countHql;
+	}
+
+	private static Pattern pattern = Pattern.compile("ORDER\\s*by[\\w|\\W|\\s|\\S]*", Pattern.CASE_INSENSITIVE);
+
+	protected String removeOrders(String sql) {
+		Matcher m = pattern.matcher(sql);
+		StringBuffer sb = new StringBuffer();
+		while (m.find()) {
+			m.appendReplacement(sb, "");
+		}
+		m.appendTail(sb);
+		return sb.toString();
+	}
+
+	// 去除sql语句中select子句
+	private static String removeSelect(String hql) {
+		int beginPos = hql.toLowerCase().indexOf("from");
+		if (beginPos < 0) {
+			throw new IllegalArgumentException(" hql : " + hql + " must has a keyword 'from'");
+		}
+		return hql.substring(beginPos);
 	}
 
 	private BoundSql copyFromBoundSql(MappedStatement ms, BoundSql boundSql, String sql) {
