@@ -85,7 +85,7 @@ public class MybatisInterceptor  implements Interceptor {
 			logger.debug("普通的SQL查询");
 			return;
 		}
-		Page<?> page = convertParameter( parameter);
+		Page<?> page = convertParameter(parameter);
 
 		if (dialect !=null && dialect.supportLimitOffset() && page != null) {
 			logger.debug("分页查询==>>");
@@ -94,16 +94,16 @@ public class MybatisInterceptor  implements Interceptor {
 			String sql = boundSql.getSql().trim();
 			int offset = page.getOffset();
 			int limit = page.getPageSize();
-			Executor executor;
 			Object executorObject = invocation.getTarget();
-			if(executorObject instanceof SimpleExecutor){
-				executor = (SimpleExecutor) invocation.getTarget();
+			Executor executor;
+			if(executorObject instanceof CachingExecutor){
+				executor = (CachingExecutor) invocation.getTarget();
 			}else if(executorObject instanceof ReuseExecutor){
 				executor = (ReuseExecutor) invocation.getTarget();
 			}else if(executorObject instanceof BatchExecutor){
 				executor = (BatchExecutor) invocation.getTarget();
 			}else{
-				executor = (CachingExecutor) invocation.getTarget();
+				executor = (SimpleExecutor) invocation.getTarget();
 			}
 
 			logger.debug("Executor impl by  "+executorObject.getClass().getSimpleName());
@@ -118,16 +118,8 @@ public class MybatisInterceptor  implements Interceptor {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			if (dialect.supportLimitOffset()) {
-
-				sql = dialect.getLimitString(sql, offset, limit);
-				offset = RowBounds.NO_ROW_OFFSET;
-
-			} else {
-
-				sql = dialect.getLimitString(sql, 0, limit);
-
-			}
+			sql = dialect.getLimitString(sql, offset, limit);
+			offset = RowBounds.NO_ROW_OFFSET;
 			limit = RowBounds.NO_ROW_LIMIT;
 
 			queryArgs[ROW_BOUNDS_INDEX] = new RowBounds(offset, limit);
