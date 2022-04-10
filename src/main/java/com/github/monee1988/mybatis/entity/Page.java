@@ -3,7 +3,6 @@ package com.github.monee1988.mybatis.entity;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,33 +18,38 @@ public class Page<T> implements Serializable{
     /**
      * 正排序
      */
-    public static final String ASC = "asc";
+    public static final String ASC = "ASC";
 
     /**
      * 倒排序
      */
-    public static final String DESC = "desc";
+    public static final String DESC = "DESC";
 
     /**
      * 默认分页容量
      */
-    public static final int DEFAULT_PAGESIZE =10;
+    public static final int DEFAULT_PAGESIZE =20;
 
     /**
      * 默认的页码
      */
-    public static final int DEFAULT_PAGENO= 1;
+    public static final int DEFAULT_PAGE_NO= 1;
 
     /**
-     * 页码
+     * 当前页码
      */
     protected int pageNo = 1;
 
-
+    /**
+     * 页码数据容量
+     */
     protected int pageSize = -1;
-    protected String orderBy = null;
-    protected String order = null;
-    protected boolean autoCount = true;
+
+//    protected String orderBy = null;
+//
+//    protected String order = null;
+//
+//    protected boolean autoCount = true;
 
     /**
      * 显示的页码列表的起始索引
@@ -132,48 +136,64 @@ public class Page<T> implements Serializable{
     /**
      * 分页参数访问函数
      * @param request
-     * @param response
      */
-    public Page(HttpServletRequest request, HttpServletResponse response) {
+    public Page(HttpServletRequest request) {
     	request.getParameterMap();
-    	String pageNoStr = request.getParameter("pageNo");
-		String pageSizeStr = request.getParameter("pageSize");
-		if (!StringUtils.isBlank(pageNoStr)) {
-			this.pageNo = Integer.valueOf(pageNoStr);
+    	String pageNo = request.getParameter("pageNo");
+		String pageSize = request.getParameter("pageSize");
+		if (!StringUtils.isBlank(pageNo)) {
+			this.pageNo = Integer.valueOf(pageNo);
 		}else{
-			this.pageNo = DEFAULT_PAGENO;
+			this.pageNo = DEFAULT_PAGE_NO;
 		}
-		if (!StringUtils.isBlank(pageSizeStr)) {
-			this.pageSize = Integer.valueOf(pageSizeStr);
+		if (!StringUtils.isBlank(pageSize)) {
+			this.pageSize = Integer.valueOf(pageSize);
 		}else{
 			this.pageSize = DEFAULT_PAGESIZE;
 		}
 	}
 
+    /**
+     * 返回Page对象自身的setPageNo函数,可用于连续设置
+     */
+    public Page<T> pageNo(int pageNo) {
+        setPageNo(pageNo);
+        return this;
+    }
+
+    /**
+     * 返回Page对象自身的setPageSize函数,可用于连续设置
+     */
+    public Page<T> pageSize(int pageSize) {
+        setPageSize(pageSize);
+        return this;
+    }
+    
 	/**
      * 获得当前页的页号
      */
     public int getPageNo() {
-        return pageNo;
+        if(pageNo > getTotalPages()){
+            setPageNo(Long.valueOf(getTotalPages()).intValue());
+        }
+        if(pageNo <= 0){
+            setPageNo(DEFAULT_PAGE_NO);
+        }
+        return this.pageNo;
     }
 
     /**
      * 设置当前页的页号
      */
-    public void setPageNo(final int pageNo) {
+    public void setPageNo(int pageNo) {
         this.pageNo = pageNo;
 
-        if (pageNo < 1) {
-            this.pageNo = 1;
+        if (pageNo < DEFAULT_PAGE_NO) {
+            this.pageNo = DEFAULT_PAGE_NO;
         }
-    }
-
-    /**
-     * 返回Page对象自身的setPageNo函数,可用于连续设置
-     */
-    public Page<T> pageNo(final int thePageNo) {
-        setPageNo(thePageNo);
-        return this;
+        if(pageNo > getTotalPages()){
+            this.pageNo = Long.valueOf(getTotalPages()).intValue();
+        }
     }
 
     /**
@@ -186,16 +206,8 @@ public class Page<T> implements Serializable{
     /**
      * 设置每页的记录数
      */
-    public void setPageSize(final int pageSize) {
+    public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
-    }
-
-    /**
-     * 返回Page对象自身的setPageSize函数,可用于连续设置
-     */
-    public Page<T> pageSize(final int thePageSize) {
-        setPageSize(thePageSize);
-        return this;
     }
 
     /**
@@ -204,91 +216,6 @@ public class Page<T> implements Serializable{
     public int getFirst() {
         return ((pageNo - 1) * pageSize) + 1;
     }
-
-    /**
-     * 获得排序字段, 多个排序字段时用','分隔.
-     */
-    public String getOrderBy() {
-        return orderBy;
-    }
-
-    /**
-     * 设置排序字段,多个排序字段时用','分隔.
-     */
-    public void setOrderBy(final String orderBy) {
-        this.orderBy = orderBy;
-    }
-
-    /**
-     * 返回Page对象自身的setOrderBy函数
-     */
-    public Page<T> orderBy(final String theOrderBy) {
-        setOrderBy(theOrderBy);
-        return this;
-    }
-
-    /**
-     * 获得排序方向
-     */
-    public String getOrder() {
-        return order;
-    }
-
-    /**
-     * 设置排序方式
-     *
-     * @param order 值为desc或asc,多个排序字段时用','分隔.
-     */
-    public void setOrder(final String order) {
-        String lowcaseOrder = StringUtils.lowerCase(order);
-
-        String[] orders = StringUtils.split(lowcaseOrder, ',');
-        for (String orderStr : orders) {
-            if (!StringUtils.equals(DESC, orderStr) && !StringUtils.equals(ASC, orderStr)) {
-                throw new IllegalArgumentException("  " + orderStr + " ");
-            }
-        }
-        this.order = lowcaseOrder;
-    }
-
-    /**
-     * 返回Page对象自身的setOrder函数
-     */
-    public Page<T> order(final String theOrder){
-    	setOrder(theOrder);
-        return this;
-    }
-
-    /**
-     * 是否已设置排序字
-     */
-    public boolean isOrderBySetted() {
-        return (StringUtils.isNotBlank(orderBy) && StringUtils.isNotBlank(order));
-    }
-
-    /**
-     * 获得查询对象时是否先自动执行count查询获取总记录数, 默认为false.
-     */
-    public boolean isAutoCount() {
-        return autoCount;
-    }
-
-    /**
-     * 设置查询对象时是否自动先执行count查询获取总记录数.
-     */
-    public void setAutoCount(final boolean autoCount) {
-        this.autoCount = autoCount;
-    }
-
-    /**
-     * 返回Page对象自身的setAutoCount函数
-     */
-    public Page<T> autoCount(final boolean theAutoCount) {
-        setAutoCount(theAutoCount);
-        return this;
-    }
-
-    //-- 访问查询结果函数 --//
 
     /**
      * 获得页内的记录列数据
@@ -300,7 +227,7 @@ public class Page<T> implements Serializable{
     /**
      * 设置页内的记录列数据
      */
-    public void setList(final List<T> list) {
+    public void setList(List<T> list) {
         this.list = list;
     }
 
@@ -314,7 +241,7 @@ public class Page<T> implements Serializable{
     /**
      * 设置总记录数.
      */
-    public void setTotalCount(final long totalCount) {
+    public void setTotalCount(long totalCount) {
         this.totalCount = totalCount;
     }
 
@@ -371,12 +298,11 @@ public class Page<T> implements Serializable{
         }
     }
 
-
     /**
      * 用于Mysql,Hibernate.
      */
     public int getOffset() {
-        return ((pageNo - 1) * pageSize);
+        return ((getPageNo() - 1) * pageSize);
     }
 
     /**
@@ -393,41 +319,33 @@ public class Page<T> implements Serializable{
         return pageSize * pageNo;
     }
 
-
     public int getStartPageIndex() {
         return startPageIndex;
     }
-
 
     public void setStartPageIndex(int startPageIndex) {
         this.startPageIndex = startPageIndex;
     }
 
-
     public int getEndPageIndex() {
         return endPageIndex;
     }
-
 
     public void setEndPageIndex(int endPageIndex) {
         this.endPageIndex = endPageIndex;
     }
 
-
     public int getPageCount() {
         return pageCount;
     }
-
 
     public void setPageCount(int pageCount) {
         this.pageCount = pageCount;
     }
 
-
     public Map<String, Object> getExtend() {
         return extend;
     }
-
 
     public void setExtend(Map<String, Object> extend) {
         this.extend = extend;

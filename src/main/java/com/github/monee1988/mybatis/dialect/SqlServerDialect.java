@@ -6,6 +6,7 @@ import org.apache.ibatis.session.RowBounds;
  * @author monee1988
  */
 public class SqlServerDialect implements Dialect{
+
     @Override
     public boolean supportPageable() {
         return true;

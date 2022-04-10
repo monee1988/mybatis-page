@@ -2,18 +2,22 @@ package com.github.monee1988.mybatis;
 
 import com.github.monee1988.mybatis.dialect.Dialect;
 import com.github.monee1988.mybatis.entity.Page;
-import org.apache.ibatis.executor.*;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
+import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.mapping.MappedStatement.Builder;
 import org.apache.ibatis.mapping.ParameterMapping;
-import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.plugin.*;
+import org.apache.ibatis.reflection.DefaultReflectorFactory;
+import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.reflection.ReflectorFactory;
+import org.apache.ibatis.reflection.factory.DefaultObjectFactory;
+import org.apache.ibatis.reflection.factory.ObjectFactory;
+import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
+import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 import org.apache.ibatis.scripting.defaults.DefaultParameterHandler;
-import org.apache.ibatis.session.ResultHandler;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.RowBounds;
-import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
@@ -34,23 +38,27 @@ import java.util.regex.Pattern;
  *  mybatis 拦截器扩展
  *  @author monee1988
  */
-@Intercepts({ @Signature(type = Executor.class, method = "query", args = { MappedStatement.class, Object.class,
-		RowBounds.class, ResultHandler.class }) })	
-public class MybatisInterceptor  implements Interceptor {
+@Intercepts({
+	@Signature(method = "prepare", type = StatementHandler.class, args = { Connection.class ,Integer.class}) }
+)
+public class MybatisInterceptor implements Interceptor {
 
 	private static final Logger logger = LoggerFactory.getLogger(MybatisInterceptor.class);
-
-	protected static final String PAGE = "page";
-
-	protected static int MAPPED_STATEMENT_INDEX = 0;
-
-	protected static int PARAMETER_INDEX = 1;
-
-	protected static int ROW_BOUNDS_INDEX = 2;
+	private static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
+	private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
+	private static final ReflectorFactory DEFAULT_REFLECTOR_FACTORY = new DefaultReflectorFactory();
+	private static final String PAGE = "page";
+	private static final Pattern pattern = Pattern.compile("ORDER\\s*by[\\w|\\W|\\s|\\S]*", Pattern.CASE_INSENSITIVE);
 
 	private Dialect dialect;
 
 	private String dialectClassName;
+
+
+	public MybatisInterceptor setDialect(String dialectClassName) {
+		setDialectClassName(dialectClassName);
+		return this;
+	}
 
 	/**
 	 * 设置分页方言
@@ -70,90 +78,85 @@ public class MybatisInterceptor  implements Interceptor {
 	@Override
 	public Object intercept(Invocation invocation) throws Throwable {
 
-		processMybatisIntercept(invocation);
+		if (invocation.getTarget() instanceof StatementHandler) {
+			processMybatisIntercept(invocation);
+		}
 
 		return invocation.proceed();
 	}
-
 	private void processMybatisIntercept(Invocation invocation) {
 
-		Object[] queryArgs = invocation.getArgs();
+		StatementHandler statementHandler = (StatementHandler) invocation.getTarget();
 
-		MappedStatement ms = (MappedStatement) queryArgs[MAPPED_STATEMENT_INDEX];
-		Object parameter = queryArgs[PARAMETER_INDEX];
+		MetaObject metaStatementHandler  = MetaObject.forObject(statementHandler, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY, DEFAULT_REFLECTOR_FACTORY);
 
-		if (parameter == null) {
-			logger.debug("普通的SQL查询");
-			return;
+		// 分离代理对象链(由于目标类可能被多个拦截器拦截，从而形成多次代理，通过下面的两次循环可以分离出最原始的的目标类)
+		while (metaStatementHandler.hasGetter("h")) {
+			Object object = metaStatementHandler.getValue("h");
+			metaStatementHandler = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY, DEFAULT_REFLECTOR_FACTORY);
 		}
+		// 分离最后一个代理对象的目标类
+		while (metaStatementHandler.hasGetter("target")) {
+			Object object = metaStatementHandler.getValue("target");
+			metaStatementHandler = MetaObject.forObject(object, DEFAULT_OBJECT_FACTORY, DEFAULT_OBJECT_WRAPPER_FACTORY, DEFAULT_REFLECTOR_FACTORY);
+		}
+
+		Object parameter = statementHandler.getParameterHandler().getParameterObject();
 		Page<?> page = convertParameter(parameter);
 
 		if (dialect !=null && dialect.supportPageable() && page != null) {
+
+			// 将mybatis的内存分页，调整为物理分页
+			BoundSql boundSql = (BoundSql) metaStatementHandler.getValue("delegate.boundSql");
+			String originalSql = boundSql.getSql().trim();;
 			logger.debug("分页查询==>>");
-			
-			BoundSql boundSql = ms.getBoundSql(parameter);
-			String originalSql = boundSql.getSql().trim();
+			//查询总记录数
+			this.setTotalRecord(page, metaStatementHandler, parameter);
+			// 重写sql
+			String pageSql =dialect.getDialectPageSql(originalSql,new RowBounds(page.getOffset(),page.getPageSize()));
 
-			Object executorObject = invocation.getTarget();
-			Executor executor;
-			if(executorObject instanceof CachingExecutor){
-				executor = (CachingExecutor) invocation.getTarget();
-			}else if(executorObject instanceof ReuseExecutor){
-				executor = (ReuseExecutor) invocation.getTarget();
-			}else if(executorObject instanceof BatchExecutor){
-				executor = (BatchExecutor) invocation.getTarget();
-			}else{
-				executor = (SimpleExecutor) invocation.getTarget();
-			}
-
-			logger.debug("Executor impl by  "+executorObject.getClass().getSimpleName());
-
-			Transaction transaction = executor.getTransaction();
-
-			try {
-				Connection connection = transaction.getConnection();
-				//查询总记录数
-				this.setTotalRecord(page, ms, connection, parameter);
-				
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-
-			RowBounds rowBounds =  new RowBounds(page.getOffset(),page.getPageSize());
-
-			String dialectPageSql = dialect.getDialectPageSql(originalSql,rowBounds);
-
-			queryArgs[ROW_BOUNDS_INDEX] = RowBounds.DEFAULT;
-
-			BoundSql newBoundSql = copyFromBoundSql(ms, boundSql, dialectPageSql);
-
-			MappedStatement newMs = copyFromMappedStatement(ms, new BoundSqlSqlSource(newBoundSql));
-
-			queryArgs[MAPPED_STATEMENT_INDEX] = newMs;
-			
-
+			metaStatementHandler.setValue("delegate.boundSql.sql", pageSql);
+			// 采用物理分页后，就不需要mybatis的内存分页了，所以重置下面的两个参数
+			metaStatementHandler.setValue("delegate.rowBounds", RowBounds.DEFAULT);
 		}else{
-			logger.debug("普通的SQL查询");
+			logger.debug("普通查询==>>");
 		}
-
 	}
 
-	private void setTotalRecord(Page<?> page, MappedStatement mappedStatement, Connection connection,
-			Object parameterObject) {
+	private String getCountSql(String sql) {
+
+		return " SELECT count(*) "+ removeSelect(removeOrders(sql));
+	}
+
+	protected String removeOrders(String sql) {
+
+		Matcher m = pattern.matcher(sql);
+		StringBuffer sb = new StringBuffer();
+		while (m.find()) {
+			m.appendReplacement(sb, "");
+		}
+		m.appendTail(sb);
+
+		return sb.toString();
+	}
+
+	private void setTotalRecord(Page<?> page, MetaObject metaStatementHandler,Object parameterObject) {
+
+		Configuration configuration = (Configuration) metaStatementHandler.getValue("delegate.configuration");
+		MappedStatement mappedStatement = (MappedStatement) metaStatementHandler.getValue("delegate.mappedStatement");
 		BoundSql boundSql = mappedStatement.getBoundSql(parameterObject);
 		String sql = boundSql.getSql();
 		String countSql = removeBreakingWhitespace(getCountSql(sql));
 		List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
-		BoundSql countBoundSql = new BoundSql(mappedStatement.getConfiguration(), countSql, parameterMappings,
-				parameterObject);
-		ParameterHandler parameterHandler = new DefaultParameterHandler(mappedStatement, parameterObject,
-				countBoundSql);
+		BoundSql countBoundSql = new BoundSql(configuration, countSql, parameterMappings,parameterObject);
+		ParameterHandler parameterHandler = new DefaultParameterHandler(mappedStatement, parameterObject,countBoundSql);
 		PreparedStatement preparedStatement = null;
 		ResultSet resultSet = null;
-		parameterHandler.getParameterObject();
 		logger.debug("Preparing: {} ", countSql);
+		Connection connection = null;
 
 		try {
+			connection = configuration.getEnvironment().getDataSource().getConnection();
 			preparedStatement = connection.prepareStatement(countSql);
 			parameterHandler.setParameters(preparedStatement);
 			resultSet = preparedStatement.executeQuery();
@@ -172,39 +175,13 @@ public class MybatisInterceptor  implements Interceptor {
 				if(preparedStatement != null){
 					preparedStatement.close();
 				}
+				if(connection != null){
+					connection.close();
+				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	private String removeBreakingWhitespace(String countSql) {
-		StringTokenizer whitespaceStripper = new StringTokenizer(countSql);
-		StringBuilder builder = new StringBuilder();
-		while (whitespaceStripper.hasMoreTokens()) {
-			builder.append(whitespaceStripper.nextToken());
-			builder.append(" ");
-		}
-		return builder.toString();
-	}
-
-	private String getCountSql(String sql) {
-		String countHql = " SELECT count(*) "
-				+ removeSelect(removeOrders(sql));
-
-		return countHql;
-	}
-
-	private static Pattern pattern = Pattern.compile("ORDER\\s*by[\\w|\\W|\\s|\\S]*", Pattern.CASE_INSENSITIVE);
-
-	protected String removeOrders(String sql) {
-		Matcher m = pattern.matcher(sql);
-		StringBuffer sb = new StringBuffer();
-		while (m.find()) {
-			m.appendReplacement(sb, "");
-		}
-		m.appendTail(sb);
-		return sb.toString();
 	}
 
 	// 去除sql语句中select子句
@@ -216,29 +193,14 @@ public class MybatisInterceptor  implements Interceptor {
 		return hql.substring(beginPos);
 	}
 
-	private BoundSql copyFromBoundSql(MappedStatement ms, BoundSql boundSql, String sql) {
-		BoundSql newBoundSql = new BoundSql(ms.getConfiguration(), sql, boundSql.getParameterMappings(),
-				boundSql.getParameterObject());
-		for (ParameterMapping mapping : boundSql.getParameterMappings()) {
-			String prop = mapping.getProperty();
-			if (boundSql.hasAdditionalParameter(prop)) {
-				newBoundSql.setAdditionalParameter(prop, boundSql.getAdditionalParameter(prop));
-			}
+	private String removeBreakingWhitespace(String countSql) {
+		StringTokenizer whitespaceStripper = new StringTokenizer(countSql);
+		StringBuilder builder = new StringBuilder();
+		while (whitespaceStripper.hasMoreTokens()) {
+			builder.append(whitespaceStripper.nextToken());
+			builder.append(" ");
 		}
-		return newBoundSql;
-	}
-
-	private MappedStatement copyFromMappedStatement(MappedStatement ms, SqlSource newSqlSource) {
-		Builder builder = new MappedStatement.Builder(ms.getConfiguration(), ms.getId(), newSqlSource,ms.getSqlCommandType());
-		builder.resource(ms.getResource());
-		builder.fetchSize(ms.getFetchSize());
-		builder.statementType(ms.getStatementType());
-		builder.keyGenerator(ms.getKeyGenerator());
-		builder.timeout(ms.getTimeout());
-		builder.parameterMap(ms.getParameterMap());
-		builder.resultMaps(ms.getResultMaps());
-		builder.cache(ms.getCache());
-		return builder.build();
+		return builder.toString();
 	}
 
 	private Page<?> convertParameter(Object parameter) {
@@ -273,17 +235,5 @@ public class MybatisInterceptor  implements Interceptor {
 	public void setProperties(Properties properties) {
 	}
 
-	public static class BoundSqlSqlSource implements SqlSource {
-		BoundSql boundSql;
-
-		public BoundSqlSqlSource(BoundSql boundSql) {
-			this.boundSql = boundSql;
-		}
-
-		@Override
-		public BoundSql getBoundSql(Object parameterObject) {
-			return boundSql;
-		}
-	}
-
 }
+
