@@ -233,6 +233,20 @@ public class MybatisInterceptor implements Interceptor {
 
 	@Override
 	public void setProperties(Properties properties) {
+
+		if(!properties.isEmpty()){
+			for (String key : properties.stringPropertyNames()) {
+				if(key.equals("dialect")){
+					setDialectClassName(properties.getProperty("dialect"));
+					return;
+				}
+				if(key.equals("dialectClassName")){
+					setDialectClassName(properties.getProperty("dialectClassName"));
+					return;
+				}
+			}
+		}
+
 	}
 
 }
