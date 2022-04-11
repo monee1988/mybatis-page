@@ -10,31 +10,31 @@ import java.util.List;
  * 自动刷新 mybatis的xml任务
  * @author monee1988
  */
-public class MointerMybatisXMLChangeTask implements Runnable {
+public class MointerMybatisXmlChangeTask implements Runnable {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());  
 
-	private MybatisXMLScanner scanner;
+	private MybatisXmlScanner scanner;
 	
-	private List<String> changeMapers = new ArrayList<String>();
+	private List<String> changeMapers = new ArrayList<>();
 
-	private MointerMybatisXMLChangeTask() {
+	private MointerMybatisXmlChangeTask() {
 		super();
 	}
 	
 	
-	public MointerMybatisXMLChangeTask(MybatisXMLScanner scanner, List<String> changeMapers) {
+	public MointerMybatisXmlChangeTask(MybatisXmlScanner scanner, List<String> changeMapers) {
 		this();
 		this.scanner = scanner;
 		this.changeMapers = changeMapers;
 	}
 
-
+	@Override
 	public void run() {
 		try {
 			if (scanner.isChanged()) {
 				logger.info(changeMapers.toString()+"文件改变,重新加载.");
-				scanner.reloadXML();
+				scanner.reloadXml();
 				logger.info("***Mapper.xml加载完毕");
 			}
 		} catch (Exception e) {
@@ -44,7 +44,7 @@ public class MointerMybatisXMLChangeTask implements Runnable {
 	}
 
 
-	public void setScanner(MybatisXMLScanner scanner) {
+	public void setScanner(MybatisXmlScanner scanner) {
 		this.scanner = scanner;
 	}
 

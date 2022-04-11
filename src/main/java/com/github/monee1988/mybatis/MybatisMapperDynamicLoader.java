@@ -1,6 +1,6 @@
 package com.github.monee1988.mybatis;
 
-import com.github.monee1988.mybatis.xmlop.MybatisXMLScanner;
+import com.github.monee1988.mybatis.xmlop.MybatisXmlScanner;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ public class MybatisMapperDynamicLoader implements DisposableBean, InitializingB
     /**
      * mybatis xml 扫描仪
      */
-    private MybatisXMLScanner scanner = null;
+    private MybatisXmlScanner scanner = null;
 
     /**
      * 需要扫描的xml位置
@@ -66,7 +66,7 @@ public class MybatisMapperDynamicLoader implements DisposableBean, InitializingB
         }
         try {
             // 触发文件监听事件
-            scanner = new MybatisXMLScanner(factory, mapperLocations);
+            scanner = new MybatisXmlScanner(factory, mapperLocations);
             scanner.scanAndMointerXmlChange();
 
             logger.debug("MybatisMapperDynamicLoader 开始监控。。。");

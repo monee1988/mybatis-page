@@ -1,6 +1,7 @@
 package com.github.monee1988.mybatis.xmlop;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.session.Configuration;
@@ -16,11 +17,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class MybatisXMLScanner {
+
+/**
+ * @author monee1988
+ */
+public class MybatisXmlScanner {
 
 	private ScheduledExecutorService service = null;
 
@@ -28,18 +33,18 @@ public class MybatisXMLScanner {
 
 	private String[] mapperLocations;
 
-	private ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
+	private final ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
 
-	private final HashMap<String, String> fileMapping = new HashMap<String, String>();
+	private final HashMap<String, String> fileMapping = new HashMap<>();
 
-	private final List<String> changeMapers = new ArrayList<String>();
+	private final List<String> changeMappers = new ArrayList<>();
 
-	private List<File> changeXMLFiles = new ArrayList<File>();
+	private final List<File> changeXmlFiles = new ArrayList<>();
 
-	public MybatisXMLScanner() {
+	public MybatisXmlScanner() {
 	}
 
-	public MybatisXMLScanner(SqlSessionFactory factory, String[] mapperLocations) {
+	public MybatisXmlScanner(SqlSessionFactory factory, String[] mapperLocations) {
 		this.sqlSession = factory;
 		this.mapperLocations = mapperLocations;
 	}
@@ -51,9 +56,9 @@ public class MybatisXMLScanner {
 
 	/**
 	 *  自动加载被修改的 XML
-	 * @throws Exception
 	 */
-	public void reloadXML() throws Exception {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void reloadXml() throws Exception {
 		Configuration configuration = sqlSession.getConfiguration();
 
 		// 清理原有资源，更新为自己的StrictMap方便，增量重新加载
@@ -75,9 +80,10 @@ public class MybatisXMLScanner {
 				field.set(configuration, newMap);
 			}
 		}
-		for (int i = 0; i < changeXMLFiles.size(); i++) {
-			InputStream inputStream = new FileInputStream(changeXMLFiles.get(i));
-			String resource = changeXMLFiles.get(i).getAbsolutePath();
+
+		for (File file : changeXmlFiles) {
+			InputStream inputStream = new FileInputStream(file);
+			String resource = file.getAbsolutePath();
 			
 			// 清理已加载的资源标识，方便让它重新加载。
 			Field loadedResourcesField = configuration.getClass().getDeclaredField("loadedResources");
@@ -89,7 +95,7 @@ public class MybatisXMLScanner {
 						configuration.getSqlFragments());
 				xmlMapperBuilder.parse();
 			} catch (Exception e) {
-				throw new NestedIOException("Failed to parse mapping resource: '" + changeXMLFiles.get(i).getAbsolutePath() + "'", e);
+				throw new NestedIOException("Failed to parse mapping resource: '" + file.getAbsolutePath() + "'", e);
 			} finally {
 				ErrorContext.instance().reset();
 			}
@@ -104,9 +110,9 @@ public class MybatisXMLScanner {
 		for (String mapperLocation : mapperLocations) {
 			Resource[] resources = getResource(mapperLocation);
 			if (resources != null) {
-				for (int i = 0; i < resources.length; i++) {
-					String multi_key = getValue(resources[i]);
-					fileMapping.put(resources[i].getFilename(), multi_key);
+				for (Resource resource : resources) {
+					String multiKey = getValue(resource);
+					fileMapping.put(resource.getFilename(), multiKey);
 				}
 			}
 		}
@@ -115,24 +121,24 @@ public class MybatisXMLScanner {
 	private String getValue(Resource resource) throws IOException {
 		String contentLength = String.valueOf((resource.contentLength()));
 		String lastModified = String.valueOf((resource.lastModified()));
-		return new StringBuilder(contentLength).append(lastModified).toString();
+		return contentLength+lastModified;
 	}
 
 	public boolean isChanged() throws IOException {
 		boolean isChanged = false;
-		changeMapers.clear();
+		changeMappers.clear();
 		for (String mapperLocation : mapperLocations) {
 			Resource[] resources = getResource(mapperLocation);
 			if (resources != null) {
-				for (int i = 0; i < resources.length; i++) {
-					String name = resources[i].getFilename();
+				for (Resource resource : resources) {
+					String name = resource.getFilename();
 					String value = fileMapping.get(name);
-					String multi_key = getValue(resources[i]);
-					if (!multi_key.equals(value)) {
-						changeMapers.add(name);
-						changeXMLFiles.add(resources[i].getFile());
+					String multiKey = getValue(resource);
+					if (!multiKey.equals(value)) {
+						changeMappers.add(name);
+						changeXmlFiles.add(resource.getFile());
 						isChanged = true;
-						fileMapping.put(name, multi_key);
+						fileMapping.put(name, multiKey);
 					}
 				}
 			}
@@ -141,8 +147,9 @@ public class MybatisXMLScanner {
 	}
 
 	private void mointerXmlChange() {
-		service = Executors.newScheduledThreadPool(1);
-		service.scheduleAtFixedRate(new MointerMybatisXMLChangeTask(this, changeMapers), 5, 5, TimeUnit.SECONDS);
+		service = new ScheduledThreadPoolExecutor(1,
+				new BasicThreadFactory.Builder().namingPattern("example-schedule-pool-%d").daemon(true).build());
+		service.scheduleAtFixedRate(new MointerMybatisXmlChangeTask(this, changeMappers), 5, 5, TimeUnit.SECONDS);
 	}
 
 	public void shutDownTask() {
