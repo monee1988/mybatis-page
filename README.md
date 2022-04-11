@@ -73,24 +73,24 @@ mentation 'com.github.monee1988:mybatis-page:0.0.2-RELEASE'
 
 
 ```
-	<!-- 动态加载sqlSessionFactory 特定的XML -->
-	<bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
-		<property name="sqlSessionFactory" ref="sqlSessionFactory"/>
-		<property name="mapperLocations">
-			<array>
-				<value>classpath:mappers/test1/*.xml</value>
-			</array>
-		</property>
-	</bean>
-	<!-- 动态加载sqlSessionFactory2 特定的XML -->
-	<bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
-		<property name="sqlSessionFactory" ref="sqlSessionFactory2"/>
-		<property name="mapperLocations">
-			<array>
-				<value>classpath:mappers/test2/read/*.xml</value>
-			</array>
-		</property>
-	</bean>
+<!-- 动态加载sqlSessionFactory 特定的XML -->
+<bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
+    <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    <property name="mapperLocations">
+        <array>
+            <value>classpath:mappers/test1/*.xml</value>
+        </array>
+    </property>
+</bean>
+<!-- 动态加载sqlSessionFactory2 特定的XML -->
+<bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
+    <property name="sqlSessionFactory" ref="sqlSessionFactory2"/>
+    <property name="mapperLocations">
+        <array>
+            <value>classpath:mappers/test2/read/*.xml</value>
+        </array>
+    </property>
+</bean>
 ```
 
 ##### 3. 分页用法
