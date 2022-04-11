@@ -1,4 +1,4 @@
-#mybatis-page
+##mybatis-page
 
 mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，用户只需要集成到自己的系统中就可以实现自动分页功能。目前支持 Mysql、Oracle和SqlServer，当然用户也可以自己扩展自己需要的数据库分页。
 
@@ -30,17 +30,17 @@ mentation 'com.github.monee1988:mybatis-page:0.0.2-RELEASE'
         <!-- 自动扫描entity目录, 省掉Configuration.xml里的手工配置 -->
         <property name="mapperLocations" value="classpath:mappers/*/*.xml" />
         <property name="plugins">
-	           <array>
-	                <!-- 定义加入mybatis-page分页拦截器 -->
-		            <bean class="com.github.monee1988.mybatis.MybatisInterceptor">
-		                <!-- 当前分页类型选择Mysql -->
-		                <property name="dialectClass" value="com.github.monee1988.mybatis.dialect.MySqlDialect"/>
-		                <!-- 当前分页类型选择Oracle -->
-		                <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.OracleDialect"/>-->
-		                <!-- 当前分页类型选择SqlServer -->
-		                <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.SqlServerDialect"/>-->
-		            </bean>
-                </array>
+           <array>
+                <!-- 定义加入mybatis-page分页拦截器 -->
+                <bean class="com.github.monee1988.mybatis.MybatisInterceptor">
+                    <!-- 当前分页类型选择Mysql -->
+                    <property name="dialectClass" value="com.github.monee1988.mybatis.dialect.MySqlDialect"/>
+                    <!-- 当前分页类型选择Oracle -->
+                    <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.OracleDialect"/>-->
+                    <!-- 当前分页类型选择SqlServer -->
+                    <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.SqlServerDialect"/>-->
+                </bean>
+            </array>
         </property>
 </bean>
 ```
@@ -119,11 +119,11 @@ Controller 示例代码
 @RequestMapping(value = {"page"} ,method = RequestMethod.GET)
 public String findPageList(ModelMap modelMap,@RequestParam(defaultValue = "1",required = false) Integer pageNo,@RequestParam(defaultValue = "20",required = false)Integer pageSize){
 
-		Page<Test> result = testService.findPage(new Test(), new Page<Test>(pageNo,pageSize));
-		modelMap.put("message", result );
-		
-		return "pageIndex";
-	}
+    Page<Test> result = testService.findPage(new Test(), new Page<Test>(pageNo,pageSize));
+    modelMap.put("message", result );
+    
+    return "pageIndex";
+}
 ```
 
 Service 示例代码
@@ -131,10 +131,10 @@ Service 示例代码
 ```
 public Page<Test> findPage(Test test, Page<Test> page) {
 		
-		test.setPage(page);
-		page.setList(testdao.findList(test));
+    test.setPage(page);
+    page.setList(testdao.findList(test));
 
-		return page;
+    return page;
 }
 ```
 
@@ -142,6 +142,6 @@ XML文件事例(事例没有按标准写完整的带字段的SQL语句，开发�
 
 ```
 <select id="findList" resultType="com.hp.entity.Test">
-        select id,name,.... from test
+    SELECT id,name,.... FROM test
 </select>
 ```
