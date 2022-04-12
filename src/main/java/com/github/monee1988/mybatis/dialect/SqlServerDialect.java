@@ -21,9 +21,9 @@ public class SqlServerDialect implements Dialect{
         if (orderStartIndex != -1 && originalSql.lastIndexOf(")") < orderStartIndex) {
             orderStr = originalSql.substring(orderStartIndex);
         }
-        String pageSql = originalSql.replaceFirst("(?i)select", "select * from (select row_number() over(" + orderStr
-                + ") as rownumber,* from ( select top " + (rowBounds.getOffset() + rowBounds.getLimit()) + " n=0,");
-        pageSql += ")t )tt where rownumber> " + rowBounds.getOffset();
+        String pageSql = originalSql.replaceFirst("(?i)SELECT", "SELECT * FROM (SELECT ROW_NUMBER() OVER(" + orderStr
+                + ") AS rowNumber,* FROM ( SELECT TOP " + (rowBounds.getOffset() + rowBounds.getLimit()) + " n=0,");
+        pageSql += ")t )tt WHERE rowNumber> " + rowBounds.getOffset();
         return pageSql;
     }
 }

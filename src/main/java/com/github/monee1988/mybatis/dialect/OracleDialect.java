@@ -23,11 +23,11 @@ public class OracleDialect implements Dialect {
 		originalSql = originalSql.trim();
 		StringBuffer pagingSelect = new StringBuffer(originalSql.length() + 100);
 		
-		pagingSelect.append("select * from ( select row_.*, rownum rownum_ from ( ");
+		pagingSelect.append("SELECT * FROM ( SELECT row_.*, rownum rownum_ from ( ");
 		pagingSelect.append(originalSql);
-		pagingSelect.append(" ) row_ ) where rownum_ > ");
+		pagingSelect.append(" ) row_ ) WHERE rownum_ > ");
 		pagingSelect.append(rowBounds.getOffset());
-		pagingSelect.append(" and rownum_ <= ");
+		pagingSelect.append(" AND rownum_ <= ");
 		pagingSelect.append(rowBounds.getOffset() + rowBounds.getLimit());
 
 		return pagingSelect.toString();
