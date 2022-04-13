@@ -1,4 +1,4 @@
-##mybatis-page
+## [mybatis-page](https://github.com/monee1988/mybatis-page)
 
 mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，用户只需要集成到自己的系统中就可以实现自动分页功能。目前支持 Mysql、Oracle和SqlServer，当然用户也可以自己扩展自己需要的数据库分页。
 
@@ -13,7 +13,7 @@ mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，�
     <version>1.1.0-RELEASE</version>
 </dependency>
 ```
-gradle
+### gradle 坐标 :
 ```
 implementation 'com.github.monee1988:mybatis-page:1.1.0-RELEASE'
 ```
