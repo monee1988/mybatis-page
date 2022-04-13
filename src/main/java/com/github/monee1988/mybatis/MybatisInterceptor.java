@@ -48,7 +48,7 @@ public class MybatisInterceptor implements Interceptor {
 	private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
 	private static final ReflectorFactory DEFAULT_REFLECTOR_FACTORY = new DefaultReflectorFactory();
 	private static final String PAGE = "page";
-	private static final Pattern pattern = Pattern.compile("ORDER\\s*by[\\w|\\W|\\s|\\S]*", Pattern.CASE_INSENSITIVE);
+	private static final Pattern PATTERN = Pattern.compile("ORDER\\s*by[\\w|\\W|\\s|\\S]*", Pattern.CASE_INSENSITIVE);
 
 	private Dialect dialect;
 
@@ -130,7 +130,7 @@ public class MybatisInterceptor implements Interceptor {
 
 	protected String removeOrders(String sql) {
 
-		Matcher m = pattern.matcher(sql);
+		Matcher m = PATTERN.matcher(sql);
 		StringBuffer sb = new StringBuffer();
 		while (m.find()) {
 			m.appendReplacement(sb, "");
@@ -236,11 +236,11 @@ public class MybatisInterceptor implements Interceptor {
 
 		if(!properties.isEmpty()){
 			for (String key : properties.stringPropertyNames()) {
-				if(key.equals("dialect")){
+				if(("dialect").equals(key)){
 					setDialectClassName(properties.getProperty("dialect"));
 					return;
 				}
-				if(key.equals("dialectClassName")){
+				if(("dialectClassName").equals(key)){
 					setDialectClassName(properties.getProperty("dialectClassName"));
 					return;
 				}
