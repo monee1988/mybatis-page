@@ -74,7 +74,7 @@ public class Page<T> implements Serializable{
     /**
      * 返回结果
      */
-    private List<T> list = new ArrayList<T>();
+    private List<T> list = new ArrayList<>();
 
     /**
      * 总数量
@@ -135,7 +135,7 @@ public class Page<T> implements Serializable{
 
     /**
      * 分页参数访问函数
-     * @param request
+     * @param request requset请求参数
      */
     public Page(HttpServletRequest request) {
     	request.getParameterMap();
