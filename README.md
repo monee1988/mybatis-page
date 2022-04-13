@@ -2,7 +2,7 @@
 
 mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，用户只需要集成到自己的系统中就可以实现自动分页功能。目前支持 Mysql、Oracle和SqlServer，当然用户也可以自己扩展自己需要的数据库分页。
 
-### [中央库地址](https://search.maven.org/artifact/com.github.monee1988/mybatis-page/0.0.2-RELEASE/jar)
+### [中央库地址](https://search.maven.org/artifact/com.github.monee1988/mybatis-page/1.1.0-RELEASE/jar)
 ### [mvnrepository 地址](http://mvnrepository.com/artifact/com.github.monee1988/mybatis-page)
 ### maven 坐标 :
 
@@ -10,19 +10,17 @@ mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，�
 <dependency>
     <groupId>com.github.monee1988</groupId>
     <artifactId>mybatis-page</artifactId>
-    <version>0.0.2-RELEASE</version>
+    <version>1.1.0-RELEASE</version>
 </dependency>
 ```
 gradle
 ```
-imple
-mentation 'com.github.monee1988:mybatis-page:0.0.2-RELEASE'
-
+implementation 'com.github.monee1988:mybatis-page:1.1.0-RELEASE'
 ```
 
-##### 1 分页拦截器配置
+### 1 分页拦截器配置
 
-###### 1.1 配置方式一：spring配置
+#### 1.1 配置方式一：spring配置
 ```
 <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
         <property name="dataSource" ref="dataSource" />
@@ -44,7 +42,7 @@ mentation 'com.github.monee1988:mybatis-page:0.0.2-RELEASE'
         </property>
 </bean>
 ```
-###### 1.2 配置方式二：spring-config.xml配置
+#### 1.2 配置方式二：spring-config.xml配置
 
 ```
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -65,10 +63,10 @@ mentation 'com.github.monee1988:mybatis-page:0.0.2-RELEASE'
 
 
 
-##### 2.  修改***Mapper.xml中sql语句自动刷新功能
+### 2.  修改***Mapper.xml中sql语句自动刷新功能
 
 为方便开发加入了 ***Mapper.xml 的自动刷新功能，可以大大缩减开发效率，不用修改 sql 语句后频繁的重启服务。
-###### 2.1 用法：
+#### 2.1 用法：
 只需要在 spring 配置文件中加入以下代码(目前只适合 xml 文件在 mappers 文件夹下的情况)，
 
 
@@ -93,7 +91,7 @@ mentation 'com.github.monee1988:mybatis-page:0.0.2-RELEASE'
 </bean>
 ```
 
-##### 3. 分页用法
+### 3. 分页用法
 ```
 返回类型 Page<T>
 ```
