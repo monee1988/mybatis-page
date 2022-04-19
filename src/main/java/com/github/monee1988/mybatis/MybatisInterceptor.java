@@ -54,7 +54,10 @@ public class MybatisInterceptor implements Interceptor {
 
 	private String dialectClassName;
 
-
+	/**
+	 * 设置分页方言
+	 * @param dialectClassName 方言类名
+	 */
 	public MybatisInterceptor setDialect(String dialectClassName) {
 		setDialectClassName(dialectClassName);
 		return this;
@@ -128,7 +131,7 @@ public class MybatisInterceptor implements Interceptor {
 		return " SELECT count(*) "+ removeSelect(removeOrders(sql));
 	}
 
-	protected String removeOrders(String sql) {
+	private String removeOrders(String sql) {
 
 		Matcher m = PATTERN.matcher(sql);
 		StringBuffer sb = new StringBuffer();

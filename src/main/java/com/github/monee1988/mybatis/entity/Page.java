@@ -135,7 +135,7 @@ public class Page<T> implements Serializable{
 
     /**
      * 分页参数访问函数
-     * @param request requset请求参数
+     * @param request request请求参数
      */
     public Page(HttpServletRequest request) {
     	request.getParameterMap();

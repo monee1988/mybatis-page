@@ -16,24 +16,24 @@ public class MointerMybatisXmlChangeTask implements Runnable {
 
 	private MybatisXmlScanner scanner;
 	
-	private List<String> changeMapers = new ArrayList<>();
+	private List<String> changeMappers = new ArrayList<>();
 
 	private MointerMybatisXmlChangeTask() {
 		super();
 	}
 	
 	
-	public MointerMybatisXmlChangeTask(MybatisXmlScanner scanner, List<String> changeMapers) {
+	public MointerMybatisXmlChangeTask(MybatisXmlScanner scanner, List<String> changeMappers) {
 		this();
 		this.scanner = scanner;
-		this.changeMapers = changeMapers;
+		this.changeMappers = changeMappers;
 	}
 
 	@Override
 	public void run() {
 		try {
 			if (scanner.isChanged()) {
-				logger.info(changeMapers.toString()+"文件改变,重新加载.");
+				logger.info(changeMappers.toString()+"文件改变,重新加载.");
 				scanner.reloadXml();
 				logger.info("***Mapper.xml加载完毕");
 			}
@@ -42,15 +42,5 @@ public class MointerMybatisXmlChangeTask implements Runnable {
 			logger.error("mybatis xml reload error");
 		}
 	}
-
-
-	public void setScanner(MybatisXmlScanner scanner) {
-		this.scanner = scanner;
-	}
-
-	public void setChangeMapers(List<String> changeMapers) {
-		this.changeMapers = changeMapers;
-	}
-	
 
 }

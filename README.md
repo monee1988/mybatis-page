@@ -74,6 +74,7 @@ implementation 'com.github.monee1988:mybatis-page:1.1.0-RELEASE'
 <!-- 动态加载sqlSessionFactory 特定的XML -->
 <bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
     <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    <property name="mapperDynamicLoader" value="true"/>	
     <property name="mapperLocations">
         <array>
             <value>classpath:mappers/test1/*.xml</value>
@@ -83,6 +84,7 @@ implementation 'com.github.monee1988:mybatis-page:1.1.0-RELEASE'
 <!-- 动态加载sqlSessionFactory2 特定的XML -->
 <bean class="com.github.monee1988.mybatis.MybatisMapperDynamicLoader">
     <property name="sqlSessionFactory" ref="sqlSessionFactory2"/>
+    <property name="mapperDynamicLoader" value="true"/>	
     <property name="mapperLocations">
         <array>
             <value>classpath:mappers/test2/read/*.xml</value>
