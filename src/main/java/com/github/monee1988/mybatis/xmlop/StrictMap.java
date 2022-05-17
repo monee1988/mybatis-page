@@ -7,6 +7,7 @@ import java.util.Map;
  * 自定义Map 为了实现监控xml的修改
  * @author monee1988
  */
+@SuppressWarnings("unchecked")
 public class StrictMap<T> extends HashMap<String,T>{
 
     private static final long serialVersionUID = -4950446264854982944L;
