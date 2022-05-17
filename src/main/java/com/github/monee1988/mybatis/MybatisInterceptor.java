@@ -20,6 +20,7 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
@@ -215,6 +216,11 @@ public class MybatisInterceptor implements Interceptor {
 			return ((Map<?, ?>) parameter).containsKey(PAGE)?(Page<?>) ((Map<?, ?>) parameter).get(PAGE):null;
 		}
 		Field pageField = ReflectionUtils.findField(parameter.getClass(), PAGE);
+
+		if(ObjectUtils.isEmpty(pageField)){
+			return null;
+		}
+
 		try {
 			boolean accessible = pageField.isAccessible();
 			pageField.setAccessible(Boolean.TRUE);

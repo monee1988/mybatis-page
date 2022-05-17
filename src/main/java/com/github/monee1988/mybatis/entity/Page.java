@@ -45,12 +45,6 @@ public class Page<T> implements Serializable{
      */
     protected int pageSize = -1;
 
-//    protected String orderBy = null;
-//
-//    protected String order = null;
-//
-//    protected boolean autoCount = true;
-
     /**
      * 显示的页码列表的起始索引
      */
@@ -142,12 +136,12 @@ public class Page<T> implements Serializable{
     	String pageNo = request.getParameter("pageNo");
 		String pageSize = request.getParameter("pageSize");
 		if (!StringUtils.isBlank(pageNo)) {
-			this.pageNo = Integer.valueOf(pageNo);
+			this.pageNo = Integer.parseInt(pageNo);
 		}else{
 			this.pageNo = DEFAULT_PAGE_NO;
 		}
 		if (!StringUtils.isBlank(pageSize)) {
-			this.pageSize = Integer.valueOf(pageSize);
+			this.pageSize = Integer.parseInt(pageSize);
 		}else{
 			this.pageSize = DEFAULT_PAGESIZE;
 		}
@@ -186,14 +180,7 @@ public class Page<T> implements Serializable{
      * 设置当前页的页号
      */
     public void setPageNo(int pageNo) {
-        this.pageNo = pageNo;
-
-        if (pageNo < DEFAULT_PAGE_NO) {
-            this.pageNo = DEFAULT_PAGE_NO;
-        }
-        if(pageNo > getTotalPages()){
-            this.pageNo = Long.valueOf(getTotalPages()).intValue();
-        }
+        this.pageNo = pageNo<DEFAULT_PAGE_NO?DEFAULT_PAGE_NO:(pageNo>getTotalCount()?Long.valueOf(getTotalPages()).intValue():pageNo);
     }
 
     /**

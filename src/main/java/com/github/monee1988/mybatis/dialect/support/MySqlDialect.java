@@ -1,5 +1,6 @@
-package com.github.monee1988.mybatis.dialect;
+package com.github.monee1988.mybatis.dialect.support;
 
+import com.github.monee1988.mybatis.dialect.Dialect;
 import org.apache.ibatis.session.RowBounds;
 
 /**
@@ -16,6 +17,7 @@ public class MySqlDialect implements Dialect {
 	public boolean supportPageable() {
 		return true;
 	}
+
 	@Override
 	public String getDialectPageSql(String originalSql, RowBounds rowBounds) {
 

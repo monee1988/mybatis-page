@@ -23,23 +23,23 @@ implementation 'com.github.monee1988:mybatis-page:1.1.0-RELEASE'
 #### 1.1 配置方式一：spring配置
 ```
 <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
-        <property name="dataSource" ref="dataSource" />
-        <!-- <property name="configuration" value="classpath:mybatis-config.xml"/ -->
-        <!-- 自动扫描entity目录, 省掉Configuration.xml里的手工配置 -->
-        <property name="mapperLocations" value="classpath:mappers/*/*.xml" />
-        <property name="plugins">
-           <array>
-                <!-- 定义加入mybatis-page分页拦截器 -->
-                <bean class="com.github.monee1988.mybatis.MybatisInterceptor">
-                    <!-- 当前分页类型选择Mysql -->
-                    <property name="dialectClass" value="com.github.monee1988.mybatis.dialect.MySqlDialect"/>
-                    <!-- 当前分页类型选择Oracle -->
-                    <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.OracleDialect"/>-->
-                    <!-- 当前分页类型选择SqlServer -->
-                    <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.SqlServerDialect"/>-->
-                </bean>
-            </array>
-        </property>
+    <property name="dataSource" ref="dataSource" />
+    <!-- <property name="configuration" value="classpath:mybatis-config.xml"/ -->
+    <!-- 自动扫描entity目录, 省掉Configuration.xml里的手工配置 -->
+    <property name="mapperLocations" value="classpath:mappers/*/*.xml" />
+    <property name="plugins">
+        <array>
+            <!-- 定义加入mybatis-page分页拦截器 -->
+            <bean class="com.github.monee1988.mybatis.MybatisInterceptor">
+            <!-- 当前分页类型选择Mysql -->
+            <property name="dialectClass" value="com.github.monee1988.mybatis.dialect.support.MySqlDialect"/>
+            <!-- 当前分页类型选择Oracle -->
+            <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.support.OracleDialect"/>-->
+            <!-- 当前分页类型选择SqlServer -->
+            <!--<property name="dialectClass" value="com.github.monee1988.mybatis.dialect.support.SqlServerDialect"/>-->
+            </bean>
+        </array>
+    </property>
 </bean>
 ```
 #### 1.2 配置方式二：spring-config.xml配置
@@ -55,8 +55,8 @@ implementation 'com.github.monee1988:mybatis-page:1.1.0-RELEASE'
     </settings>
    <plugins>
         <plugin interceptor="com.github.monee1988.mybatis.MybatisInterceptor">
-            <property name="dialectClassName" value="com.github.monee1988.mybatis.dialect.MySqlDialect"/>
-        </plugin>
+            <property name="dialectClassName" value="com.github.monee1988.mybatis.dialect.support.MySqlDialect"/>
+        ~~</plugin>~~
     </plugins>
 </configuration>
 ```

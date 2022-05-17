@@ -1,11 +1,12 @@
-package com.github.monee1988.mybatis.dialect;
+package com.github.monee1988.mybatis.dialect.support;
 
+import com.github.monee1988.mybatis.dialect.Dialect;
 import org.apache.ibatis.session.RowBounds;
 
 /**
  * @author monee1988
  */
-public class SqlServerDialect implements Dialect{
+public class SqlServerDialect implements Dialect {
 
     @Override
     public boolean supportPageable() {
