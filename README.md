@@ -2,7 +2,7 @@
 
 mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，用户只需要集成到自己的系统中就可以实现自动分页功能。目前支持 Mysql、Oracle和SqlServer，当然用户也可以自己扩展自己需要的数据库分页。
 
-### [中央库地址](https://search.maven.org/artifact/com.github.monee1988/mybatis-page/1.1.0-RELEASE/jar)
+### [中央库地址](https://search.maven.org/artifact/com.github.monee1988/mybatis-page/1.0.1-RELEASE/jar)
 ### [mvnrepository 地址](http://mvnrepository.com/artifact/com.github.monee1988/mybatis-page)
 ### maven 坐标 :
 
@@ -10,12 +10,12 @@ mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，�
 <dependency>
     <groupId>com.github.monee1988</groupId>
     <artifactId>mybatis-page</artifactId>
-    <version>1.1.0-RELEASE</version>
+    <version>1.0.1-RELEASE</version>
 </dependency>
 ```
 ### gradle 坐标 :
 ```
-implementation 'com.github.monee1988:mybatis-page:1.1.0-RELEASE'
+implementation 'com.github.monee1988:mybatis-page:1.0.1-RELEASE'
 ```
 
 ### 1 分页拦截器配置
