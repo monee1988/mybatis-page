@@ -42,7 +42,7 @@ implementation 'com.github.monee1988:mybatis-page:1.0.1-RELEASE'
     </property>
 </bean>
 ```
-#### 1.2 配置方式二：spring-config.xml配置
+#### 1.2 配置方式二：mybatis-config.xml配置
 
 ```
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -119,7 +119,7 @@ Controller 示例代码
 @RequestMapping(value = {"page"} ,method = RequestMethod.GET)
 public String findPageList(ModelMap modelMap,@RequestParam(defaultValue = "1",required = false) Integer pageNo,@RequestParam(defaultValue = "20",required = false)Integer pageSize){
 
-    Page<Test> result = testService.findPage(new Test(), new Page<Test>(pageNo,pageSize));
+    Page<Country> result = testService.findPage(new Country(), new Page<Test>(pageNo,pageSize));
     modelMap.put("message", result );
     
     return "pageIndex";
@@ -129,10 +129,10 @@ public String findPageList(ModelMap modelMap,@RequestParam(defaultValue = "1",re
 Service 示例代码
 
 ```
-public Page<Test> findPage(Test test, Page<Test> page) {
+public Page<Country> findPage(Country country, Page<Country> page) {
 		
     test.setPage(page);
-    page.setList(testdao.findList(test));
+    page.setList(testdao.findList(country));
 
     return page;
 }
@@ -141,7 +141,7 @@ public Page<Test> findPage(Test test, Page<Test> page) {
 XML文件事例(事例没有按标准写完整的带字段的SQL语句，开发中不建议此写法)
 
 ```
-<select id="findList" resultType="com.hp.entity.Test">
-    SELECT id,name,.... FROM test
+<select id="findList" resultType="Country">
+    SELECT code,name,.... FROM country
 </select>
 ```

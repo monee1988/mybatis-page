@@ -112,7 +112,7 @@ public class MybatisInterceptor implements Interceptor {
 
 			// 将mybatis的内存分页，调整为物理分页
 			BoundSql boundSql = (BoundSql) metaStatementHandler.getValue("delegate.boundSql");
-			String originalSql = boundSql.getSql().trim();;
+			String originalSql = boundSql.getSql().trim();
 			logger.debug("分页查询==>>");
 			//查询总记录数
 			this.setTotalRecord(page, metaStatementHandler, parameter);
@@ -208,6 +208,10 @@ public class MybatisInterceptor implements Interceptor {
 	}
 
 	private Page<?> convertParameter(Object parameter) {
+
+		if(ObjectUtils.isEmpty(parameter)){
+			return null;
+		}
 
 		if (parameter instanceof Page<?>) {
 			return (Page<?>) parameter;
