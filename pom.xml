@@ -40,7 +40,7 @@
 	</scm>
 
 	<properties>
-		<springframework.version>5.3.20</springframework.version>
+		<springframework.version>5.3.27</springframework.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
@@ -50,12 +50,12 @@
 		<dependency>
 			<groupId>org.mybatis</groupId>
 			<artifactId>mybatis</artifactId>
-			<version>3.5.9</version>
+			<version>3.5.13</version>
 		</dependency>
 		<dependency>
 			<groupId>org.mybatis</groupId>
 			<artifactId>mybatis-spring</artifactId>
-			<version>2.0.7</version>
+			<version>3.0.2</version>
 		</dependency>
 
 		<dependency>
@@ -69,7 +69,6 @@
 			<version>4.0.1</version>
 			<scope>provided</scope>
 		</dependency>
-
 
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -86,14 +85,12 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.36</version>
-			<scope>compile</scope>
+			<version>2.0.7</version>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.2.11</version>
-			<scope>runtime</scope>
+			<version>1.2.12</version>
 		</dependency>
 
     </dependencies>

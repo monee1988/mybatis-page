@@ -6,7 +6,6 @@ import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.springframework.core.NestedIOException;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -95,7 +94,7 @@ public class MybatisXmlScanner {
 						configuration.getSqlFragments());
 				xmlMapperBuilder.parse();
 			} catch (Exception e) {
-				throw new NestedIOException("Failed to parse mapping resource: '" + file.getAbsolutePath() + "'", e);
+				throw new IOException("Failed to parse mapping resource: '" + file.getAbsolutePath() + "'", e);
 			} finally {
 				ErrorContext.instance().reset();
 			}

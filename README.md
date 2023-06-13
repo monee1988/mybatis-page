@@ -17,6 +17,14 @@ mybais-page 是自定义的一个 mybatis 分页插件，方便系统集成，�
 ```
 implementation 'com.github.monee1988:mybatis-page:1.0.1-RELEASE'
 ```
+### 依賴插件版本
+| 依赖               | 版本   | 
+|------------------|------|
+| mybatis          | 3.5.13 |
+| mybatis-spring   | 3.0.2 |
+| Spring Framework | 5.3.27 |
+| slf4j | 2.0.7 |
+| logback | 1.2.12 |
 
 ### 1 分页拦截器配置
 
