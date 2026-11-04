@@ -1,0 +1,12 @@
+# 构建产物
+target/
+
+# IDE
+.settings/
+.classpath
+.project
+*.iml
+.idea/
+
+# Maven 本地状态
+*.lastUpdated
