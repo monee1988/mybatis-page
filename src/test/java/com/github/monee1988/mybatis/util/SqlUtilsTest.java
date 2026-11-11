@@ -136,14 +136,47 @@ class SqlUtilsTest {
     }
 
     @Test
-    @DisplayName("顶层 FOR UPDATE 定位：子查询内的不算")
-    void topLevelForUpdateIndex() {
-        assertTrue(SqlUtils.indexOfTopLevelForUpdate("SELECT a FROM t WHERE id = 1 FOR UPDATE") > 0);
-        // 子查询里的 FOR UPDATE 处于括号内，不应被识别为顶层
-        assertEquals(-1, SqlUtils.indexOfTopLevelForUpdate(
+    @DisplayName("顶层锁子句定位：子查询内的、字符串里的都不算")
+    void topLevelLockClauseIndex() {
+        assertTrue(SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t WHERE id = 1 FOR UPDATE") > 0);
+        // 子查询里的锁子句处于括号内，不应被识别为顶层
+        assertEquals(-1, SqlUtils.indexOfTopLevelLockClause(
                 "SELECT a FROM (SELECT a FROM y FOR UPDATE) t"));
-        assertEquals(-1, SqlUtils.indexOfTopLevelForUpdate("SELECT a FROM t"));
-        // 字符串字面量中的 FOR UPDATE 不算
-        assertEquals(-1, SqlUtils.indexOfTopLevelForUpdate("SELECT a FROM t WHERE note = 'FOR UPDATE'"));
+        assertEquals(-1, SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t"));
+        // 字符串字面量中的锁子句不算
+        assertEquals(-1, SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t WHERE note = 'FOR UPDATE'"));
+    }
+
+    @Test
+    @DisplayName("顶层锁子句定位：覆盖 FOR SHARE / LOCK IN SHARE MODE 等变体")
+    void topLevelLockClauseVariants() {
+        assertTrue(SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t FOR SHARE") > 0);
+        assertTrue(SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t FOR NO KEY UPDATE") > 0);
+        assertTrue(SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t FOR KEY SHARE OF t") > 0);
+        assertTrue(SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t LOCK IN SHARE MODE") > 0);
+        assertTrue(SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t FOR UPDATE NOWAIT") > 0);
+        assertTrue(SqlUtils.indexOfTopLevelLockClause("SELECT a FROM t FOR UPDATE SKIP LOCKED") > 0);
+        // 列名里含 share/update 字样不能被误判
+        assertEquals(-1, SqlUtils.indexOfTopLevelLockClause("SELECT share, updated FROM t"));
+    }
+
+    @Test
+    @DisplayName("推导 count SQL 时剥离所有锁子句变体")
+    void countSqlStripsEveryLockClause() {
+        assertEquals("SELECT COUNT(*) FROM t WHERE a = 1",
+                SqlUtils.buildCountSql("SELECT a FROM t WHERE a = 1 FOR SHARE"));
+        assertEquals("SELECT COUNT(*) FROM t WHERE a = 1",
+                SqlUtils.buildCountSql("SELECT a FROM t WHERE a = 1 LOCK IN SHARE MODE"));
+        assertEquals("SELECT COUNT(*) FROM t WHERE a = 1",
+                SqlUtils.buildCountSql("SELECT a FROM t WHERE a = 1 FOR NO KEY UPDATE"));
+    }
+
+    @Test
+    @DisplayName("提取 order by 遇到锁子句即截止，不把锁带出来")
+    void orderByStopsAtLockClause() {
+        assertEquals("ORDER BY a DESC",
+                SqlUtils.extractTopLevelOrderBy("SELECT a FROM t ORDER BY a DESC FOR UPDATE"));
+        assertEquals("ORDER BY a DESC",
+                SqlUtils.extractTopLevelOrderBy("SELECT a FROM t ORDER BY a DESC LIMIT 10 FOR UPDATE"));
     }
 }

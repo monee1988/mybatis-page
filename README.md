@@ -141,9 +141,9 @@ SELECT code, name FROM country WHERE 1 = 1 AND code LIKE CONCAT('%', ?, '%') ORD
 
 | 数据库 | 实现类 | 分页写法 |
 |---|---|---|
-| MySQL / MariaDB | `MySqlDialect` | `LIMIT offset, size`（带 `FOR UPDATE` 时 `LIMIT` 插在锁子句前） |
-| PostgreSQL / KingbaseES / openGauss | `PostgreSqlDialect` | `LIMIT size OFFSET offset`（同上支持 `FOR UPDATE`） |
-| Oracle | `OracleDialect` | 三层 `ROWNUM`，顶层 `ORDER BY` 提到最外层 |
+| MySQL / MariaDB | `MySqlDialect` | `LIMIT offset, size`（带锁子句时 `LIMIT` 插在锁子句前） |
+| PostgreSQL / KingbaseES / openGauss | `PostgreSqlDialect` | `LIMIT size OFFSET offset`（同上支持各种锁子句） |
+| Oracle | `OracleDialect` | 三层 `ROWNUM`，顶层 `ORDER BY` 提到最外层；**带锁子句时抛 `PersistenceException`**（ORA-02014，不静默丢锁） |
 | SQL Server 2005+ | `SqlServerDialect` | `ROW_NUMBER() OVER (...)` 包裹 |
 
 扩展新数据库只需实现 `com.github.monee1988.mybatis.dialect.Dialect`：
@@ -192,7 +192,10 @@ logging:
 - 移除 `slf4j-api` 依赖，日志改用 MyBatis 自带 `LogFactory`：纯 MyBatis 项目无 slf4j 也能运行（此前会 `NoClassDefFoundError`）
 - 日志前缀抽为公共常量 `MybatisInterceptor.LOG_PREFIX`，starter 复用同一常量
 - 修复 `STDOUT_LOGGING` 下「参数中没有 page」按调用次数刷屏：简单类型参数静默，Map / 实体同类只提示一次
-- 修复带 `FOR UPDATE` 的语句分页时生成 `... FOR UPDATE LIMIT 0,10` 的语法错误（MySQL / PostgreSQL 方言把 `LIMIT` 插到锁子句之前）
+- 修复带锁子句的语句分页时生成 `... FOR UPDATE LIMIT 0,10` 的语法错误（MySQL / PostgreSQL 方言把 `LIMIT` 插到锁子句之前），覆盖 `FOR UPDATE` / `FOR SHARE` / `FOR NO KEY UPDATE` / `FOR KEY SHARE` / `LOCK IN SHARE MODE`
+- `OracleDialect` 遇到锁子句改为抛 `PersistenceException`（ORA-02014），不再静默丢掉 `FOR UPDATE` 导致并发下丢失更新
+- `extractTopLevelOrderBy` 遇到锁子句即截止，不再把 `FOR UPDATE` 带进 `OVER()` / 最外层排序
+- 只改写 `SELECT` 语句：按 `MappedStatement#getSqlCommandType()` 判定，`INSERT` / `UPDATE` / `DELETE` 直接放行，避免 DML 复用带 `page` 属性的查询条件基类时被拼上 `LIMIT`
 - 无法推导 count SQL 的语句（无顶层 `FROM`）统一抛 `PersistenceException`，与统计失败的异常契约一致
 
 ## 1.1.0 变更

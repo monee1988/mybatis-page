@@ -23,6 +23,23 @@ public final class SqlUtils {
     /** 包裹式子查询的固定别名 */
     private static final String WRAP_ALIAS = "MYBATIS_PAGE_COUNT";
 
+    /**
+     * 顶层锁子句正则，覆盖：
+     * {@code FOR UPDATE}、{@code FOR SHARE}、{@code FOR NO KEY UPDATE}、{@code FOR KEY SHARE}
+     * （MySQL 8 / PostgreSQL），以及 MySQL 旧版 {@code LOCK IN SHARE MODE}。
+     *
+     * <p>这些子句在 MySQL / PostgreSQL 中只能出现在语句最末尾，因此：</p>
+     * <ul>
+     *   <li>拼接分页子句时必须插到它们<b>之前</b>；</li>
+     *   <li>推导 count SQL 时必须整体剥掉——聚合查询带锁子句会被 PostgreSQL 直接拒绝，
+     *       MySQL 则会把扫描行全部加锁。</li>
+     * </ul>
+     *
+     * <p>外层用非捕获组包住，保证 {@link #indexOfTopLevel} 拼接的前后向断言作用于整个分支。</p>
+     */
+    private static final String LOCK_CLAUSE =
+            "(?:FOR\\s+(?:UPDATE|SHARE|NO\\s+KEY\\s+UPDATE|KEY\\s+SHARE)|LOCK\\s+IN\\s+SHARE\\s+MODE)";
+
     private static final Pattern LEADING_WITH = Pattern.compile("^\\s*WITH\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern LEADING_DISTINCT =
             Pattern.compile("^\\s*SELECT\\s+DISTINCT\\b", Pattern.CASE_INSENSITIVE);
@@ -68,7 +85,7 @@ public final class SqlUtils {
     }
 
     /**
-     * 去掉顶层的 ORDER BY / LIMIT / OFFSET / FOR UPDATE 等尾部子句。
+     * 去掉顶层的 ORDER BY / LIMIT / OFFSET / 锁子句（FOR UPDATE 等）等尾部子句。
      * 子查询内部同名的子句不受影响（因为按括号深度判定）。
      */
     public static String stripTopLevelTailClauses(String sql) {
@@ -81,7 +98,7 @@ public final class SqlUtils {
         int cut = -1;
         int p = indexOfTopLevel(masked, depth, "ORDER\\s+BY");
         cut = minPositive(cut, p);
-        p = indexOfTopLevel(masked, depth, "FOR\\s+UPDATE");
+        p = indexOfTopLevel(masked, depth, LOCK_CLAUSE);
         cut = minPositive(cut, p);
         p = indexOfTopLevel(masked, depth, "\\bLIMIT\\b");
         cut = minPositive(cut, p);
@@ -108,7 +125,12 @@ public final class SqlUtils {
         return count;
     }
 
-    /** 提取顶层 ORDER BY 子句（含关键字），没有则返回 null */
+    /**
+     * 提取顶层 ORDER BY 子句（含关键字），没有则返回 null。
+     *
+     * <p>子句到 {@code LIMIT} 或锁子句（{@code FOR UPDATE} 等）为止——
+     * 锁子句不能进入 {@code OVER()} 或最外层排序位置，否则会生成非法 SQL。</p>
+     */
     public static String extractTopLevelOrderBy(String sql) {
         if (sql == null || sql.isEmpty()) {
             return null;
@@ -119,13 +141,21 @@ public final class SqlUtils {
         if (pos < 0) {
             return null;
         }
+        int end = sql.length();
         int limit = indexOfTopLevel(masked, depth, "\\bLIMIT\\b");
-        int end = limit > pos ? limit : sql.length();
+        if (limit > pos && limit < end) {
+            end = limit;
+        }
+        int lock = indexOfTopLevel(masked, depth, LOCK_CLAUSE);
+        if (lock > pos && lock < end) {
+            end = lock;
+        }
         return sql.substring(pos, end).trim();
     }
 
     /**
-     * 顶层 {@code FOR UPDATE}（含 {@code FOR UPDATE NOWAIT} 等变体）的起始位置，没有则返回 -1。
+     * 顶层锁子句（{@code FOR UPDATE} / {@code FOR SHARE} / {@code LOCK IN SHARE MODE} 等）
+     * 的起始位置，没有则返回 -1。
      *
      * <p>MySQL / PostgreSQL 的语法要求分页子句写在锁子句之前，
      * 方言拼接 {@code LIMIT} 时据此位置插入，避免生成
@@ -134,12 +164,12 @@ public final class SqlUtils {
      * @param sql 原始 SQL
      * @return 顶层锁子句起始索引，不存在时返回 -1
      */
-    public static int indexOfTopLevelForUpdate(String sql) {
+    public static int indexOfTopLevelLockClause(String sql) {
         if (sql == null || sql.isEmpty()) {
             return -1;
         }
         String masked = mask(sql);
-        return indexOfTopLevel(masked, computeDepth(masked), "FOR\\s+UPDATE");
+        return indexOfTopLevel(masked, computeDepth(masked), LOCK_CLAUSE);
     }
 
     // ------------------------------------------------------------------

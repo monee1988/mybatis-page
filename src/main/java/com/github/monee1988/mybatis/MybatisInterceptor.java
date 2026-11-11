@@ -10,6 +10,7 @@ import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
+import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
@@ -159,19 +160,44 @@ public class MybatisInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
+        if (dialect == null || !dialect.supportPageable()) {
+            return invocation.proceed();
+        }
         StatementHandler statementHandler = (StatementHandler) invocation.getTarget();
-        Connection connection = resolveConnection(invocation);
+        MetaObject meta = unwrap(statementHandler);
 
-        if (dialect != null && dialect.supportPageable()) {
-            Object parameterObject = statementHandler.getParameterHandler().getParameterObject();
-            Page<?> page = resolvePage(parameterObject);
-            if (page != null) {
-                processPage(statementHandler, connection, page);
-            } else {
-                hintMissingPage(parameterObject);
-            }
+        // 分页只对 SELECT 生效。prepare 对 INSERT / UPDATE / DELETE / CALL 同样触发，
+        // 若参数 Bean 恰好带 page 属性（查询条件基类被复用的情况很常见），
+        // 不做这层判断就会给 DML 拼上 LIMIT，直接变成语法错误。
+        if (!isSelect(meta)) {
+            return invocation.proceed();
+        }
+
+        Object parameterObject = statementHandler.getParameterHandler().getParameterObject();
+        Page<?> page = resolvePage(parameterObject);
+        if (page != null) {
+            processPage(meta, parameterObject, resolveConnection(invocation), page);
+        } else {
+            hintMissingPage(parameterObject);
         }
         return invocation.proceed();
+    }
+
+    /**
+     * 判断当前语句是否为 SELECT。
+     *
+     * <p>拿不到 MappedStatement 时（例如被其他插件代理成非标准结构）返回 {@code true}，
+     * 保持"不因框架结构差异而擅自跳过分页"的保守行为。</p>
+     */
+    private static boolean isSelect(MetaObject meta) {
+        if (!meta.hasGetter("delegate.mappedStatement")) {
+            return true;
+        }
+        Object mappedStatement = meta.getValue("delegate.mappedStatement");
+        if (!(mappedStatement instanceof MappedStatement)) {
+            return true;
+        }
+        return ((MappedStatement) mappedStatement).getSqlCommandType() == SqlCommandType.SELECT;
     }
 
     /**
@@ -224,8 +250,7 @@ public class MybatisInterceptor implements Interceptor {
     /**
      * 改写 SQL：查总数 -> 分页 -> 重置 RowBounds。
      */
-    private void processPage(StatementHandler statementHandler, Connection connection, Page<?> page) {
-        MetaObject meta = unwrap(statementHandler);
+    private void processPage(MetaObject meta, Object parameterObject, Connection connection, Page<?> page) {
         if (!meta.hasGetter("delegate.boundSql")) {
             log.warn(LOG_PREFIX + "当前 StatementHandler 结构不支持分页（缺少 delegate.boundSql），跳过。类型="
                     + meta.getOriginalObject().getClass().getName());
@@ -233,7 +258,6 @@ public class MybatisInterceptor implements Interceptor {
         }
 
         BoundSql boundSql = (BoundSql) meta.getValue("delegate.boundSql");
-        Object parameterObject = statementHandler.getParameterHandler().getParameterObject();
         String originalSql = boundSql.getSql();
 
         if (page.getPageSize() <= 0) {
