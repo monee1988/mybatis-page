@@ -134,4 +134,16 @@ class SqlUtilsTest {
         assertEquals("SELECT COUNT(*) FROM (SELECT a FROM t) MYBATIS_PAGE_COUNT",
                 SqlUtils.buildWrappedCountSql("SELECT a FROM t ORDER BY a"));
     }
+
+    @Test
+    @DisplayName("顶层 FOR UPDATE 定位：子查询内的不算")
+    void topLevelForUpdateIndex() {
+        assertTrue(SqlUtils.indexOfTopLevelForUpdate("SELECT a FROM t WHERE id = 1 FOR UPDATE") > 0);
+        // 子查询里的 FOR UPDATE 处于括号内，不应被识别为顶层
+        assertEquals(-1, SqlUtils.indexOfTopLevelForUpdate(
+                "SELECT a FROM (SELECT a FROM y FOR UPDATE) t"));
+        assertEquals(-1, SqlUtils.indexOfTopLevelForUpdate("SELECT a FROM t"));
+        // 字符串字面量中的 FOR UPDATE 不算
+        assertEquals(-1, SqlUtils.indexOfTopLevelForUpdate("SELECT a FROM t WHERE note = 'FOR UPDATE'"));
+    }
 }

@@ -124,6 +124,24 @@ public final class SqlUtils {
         return sql.substring(pos, end).trim();
     }
 
+    /**
+     * 顶层 {@code FOR UPDATE}（含 {@code FOR UPDATE NOWAIT} 等变体）的起始位置，没有则返回 -1。
+     *
+     * <p>MySQL / PostgreSQL 的语法要求分页子句写在锁子句之前，
+     * 方言拼接 {@code LIMIT} 时据此位置插入，避免生成
+     * {@code ... FOR UPDATE LIMIT 0,10} 这类非法 SQL。</p>
+     *
+     * @param sql 原始 SQL
+     * @return 顶层锁子句起始索引，不存在时返回 -1
+     */
+    public static int indexOfTopLevelForUpdate(String sql) {
+        if (sql == null || sql.isEmpty()) {
+            return -1;
+        }
+        String masked = mask(sql);
+        return indexOfTopLevel(masked, computeDepth(masked), "FOR\\s+UPDATE");
+    }
+
     // ------------------------------------------------------------------
     // 内部实现
     // ------------------------------------------------------------------

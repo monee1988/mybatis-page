@@ -5,7 +5,7 @@
 
     <groupId>com.github.monee1988</groupId>
     <artifactId>mybatis-page</artifactId>
-    <version>1.1.0-RELEASE</version>
+    <version>1.1.1-RELEASE</version>
     <packaging>jar</packaging>
 
     <name>mybatis-page</name>
@@ -44,7 +44,6 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <mybatis.version>3.5.16</mybatis.version>
-        <slf4j.version>1.7.36</slf4j.version>
         <junit.version>5.10.2</junit.version>
     </properties>
 
@@ -58,13 +57,10 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Logging with SLF4J -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>provided</scope>
-        </dependency>
+        <!--
+          日志：不引入任何日志依赖，直接使用运行期必存在的 MyBatis 自带
+          org.apache.ibatis.logging.LogFactory（自动探测 slf4j / log4j2 / JUL 等）。
+        -->
 
         <!-- 单元测试 -->
         <dependency>

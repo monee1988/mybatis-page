@@ -6,7 +6,7 @@ MyBatis 物理分页插件。挂在 `StatementHandler#prepare` 上，在 SQL 预
 
 | 项 | 内容 |
 |---|---|
-| Maven 坐标 | `com.github.monee1988:mybatis-page:1.1.0-RELEASE` |
+| Maven 坐标 | `com.github.monee1988:mybatis-page:1.1.1-RELEASE` |
 | 运行环境 | JDK 8+，MyBatis 3.5.x |
 | 许可 | Apache License 2.0 |
 
@@ -28,11 +28,11 @@ Spring Boot 项目建议直接引入配套 starter `com.github.monee1988:mybatis
 <dependency>
     <groupId>com.github.monee1988</groupId>
     <artifactId>mybatis-page</artifactId>
-    <version>1.1.0-RELEASE</version>
+    <version>1.1.1-RELEASE</version>
 </dependency>
 ```
 
-MyBatis 与 slf4j 为 `provided`，请由使用方自行提供版本。
+MyBatis 为 `provided`，请由使用方自行提供版本；**日志不引入任何依赖**，直接使用 MyBatis 自带的 `LogFactory`（详见下文「日志」）。
 
 ### 2. 注册拦截器
 
@@ -141,8 +141,8 @@ SELECT code, name FROM country WHERE 1 = 1 AND code LIKE CONCAT('%', ?, '%') ORD
 
 | 数据库 | 实现类 | 分页写法 |
 |---|---|---|
-| MySQL / MariaDB | `MySqlDialect` | `LIMIT offset, size` |
-| PostgreSQL / KingbaseES / openGauss | `PostgreSqlDialect` | `LIMIT size OFFSET offset` |
+| MySQL / MariaDB | `MySqlDialect` | `LIMIT offset, size`（带 `FOR UPDATE` 时 `LIMIT` 插在锁子句前） |
+| PostgreSQL / KingbaseES / openGauss | `PostgreSqlDialect` | `LIMIT size OFFSET offset`（同上支持 `FOR UPDATE`） |
 | Oracle | `OracleDialect` | 三层 `ROWNUM`，顶层 `ORDER BY` 提到最外层 |
 | SQL Server 2005+ | `SqlServerDialect` | `ROW_NUMBER() OVER (...)` 包裹 |
 
@@ -150,15 +150,32 @@ SELECT code, name FROM country WHERE 1 = 1 AND code LIKE CONCAT('%', ?, '%') ORD
 
 ```java
 public interface Dialect {
-    String getPageSql(String sql, Page<?> page);
+    /** 是否支持物理分页 */
+    boolean supportPageable();
+
+    /** 生成分页 SQL，rowBounds.getOffset() 为偏移量，getLimit() 为每页条数 */
+    String getDialectPageSql(String originalSql, RowBounds rowBounds);
 }
 ```
 
 > SQL Server 方言的包裹查询会多出一列 `MYBATIS_PAGE_RN_`。`resultType` 为实体类时按属性名映射会自动忽略；`resultType="map"` 时会多一个 key，介意的话请在 SQL 中显式列出字段。
 
-## 排查「为什么没分页」
+## 日志
 
-把日志级别开到 debug：
+本库**不引入任何日志依赖**，日志全部走 MyBatis 自带的 `org.apache.ibatis.logging.LogFactory`：
+
+- 按 `slf4j → commons-logging → log4j2 → log4j → JUL` 顺序自动探测，用户项目里有什么就用什么；全都没有时静默，**不会抛 `NoClassDefFoundError`**。
+- 与 MyBatis 全局 `<setting name="logImpl" .../>` 统一：配一次，MyBatis 与本插件同时生效。纯 MyBatis 项目无需额外加 slf4j。
+- 所有输出统一前缀 `mybatis-page: `（常量 `MybatisInterceptor.LOG_PREFIX`）。
+
+| 日志 | 级别 | 用途 |
+|---|---|---|
+| `mybatis-page: 使用方言 XxxDialect` | DEBUG | 方言加载确认 |
+| `mybatis-page: count SQL: ...` | DEBUG | 实际执行的 count 语句 |
+| `mybatis-page: 分页 pageNo=..., pageSize=..., total=...` | DEBUG | 改写后的分页 SQL |
+| `mybatis-page: 参数 X 中未找到 page 对象…` | DEBUG | 参数可能承载分页但没找到 page；**同类参数只提示一次**，`STDOUT_LOGGING` 下也不会按行刷屏 |
+
+排查「为什么没分页」：把日志级别开到 debug
 
 ```yaml
 logging:
@@ -166,7 +183,17 @@ logging:
     com.github.monee1988.mybatis: debug
 ```
 
-能看到 `mybatis-page 分页:` 说明已识别到 `Page` 并改写了 SQL；没有这行就是没找到 `Page` 对象，按上面「三种方式」检查参数结构。
+纯 MyBatis 项目则配置 MyBatis 的 `logImpl`（如 `STDOUT_LOGGING` 或 `SLF4J`）。
+
+能看到 `mybatis-page: 分页` 说明已识别到 `Page` 并改写了 SQL；没有这行就是没找到 `Page` 对象，按上面「三种方式」检查参数结构。
+
+## 1.1.1 变更
+
+- 移除 `slf4j-api` 依赖，日志改用 MyBatis 自带 `LogFactory`：纯 MyBatis 项目无 slf4j 也能运行（此前会 `NoClassDefFoundError`）
+- 日志前缀抽为公共常量 `MybatisInterceptor.LOG_PREFIX`，starter 复用同一常量
+- 修复 `STDOUT_LOGGING` 下「参数中没有 page」按调用次数刷屏：简单类型参数静默，Map / 实体同类只提示一次
+- 修复带 `FOR UPDATE` 的语句分页时生成 `... FOR UPDATE LIMIT 0,10` 的语法错误（MySQL / PostgreSQL 方言把 `LIMIT` 插到锁子句之前）
+- 无法推导 count SQL 的语句（无顶层 `FROM`）统一抛 `PersistenceException`，与统计失败的异常契约一致
 
 ## 1.1.0 变更
 
